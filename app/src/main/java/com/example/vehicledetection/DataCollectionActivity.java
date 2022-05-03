@@ -2,6 +2,7 @@ package com.example.vehicledetection;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -10,6 +11,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -19,15 +22,20 @@ import java.util.NoSuchElementException;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
 
-    Sensor sAcceleration;
-    SensorManager sm;
-    boolean recording = false;
+    private Sensor sAcceleration;
+    private SensorManager sm;
+    private boolean recording = false;
+    private Context c;
+    private File temp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_data_collection);
         setSensors();
+        c = this.getBaseContext();
+        try { temp = File.createTempFile("data", ".xml", c.getCacheDir()); }
+        catch (IOException e) { e.printStackTrace(); }
     }
 
     @Override
@@ -49,29 +57,30 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             float z = event.values[2];
 
             // --------- Remove after file implement -------------//
-            TextView t = findViewById(R.id.auxiliarText);
-            t.setText("Remove after having data on a file\n\n" + "x: " + String.valueOf(x) + " y: " + String.valueOf(y) + " z: " + String.valueOf(z));
+//            TextView t = findViewById(R.id.auxiliarText);
+//            t.setText("Remove after having data on a file\n\n" + "x: " + String.valueOf(x) + " y: " + String.valueOf(y) + " z: " + String.valueOf(z));
             // -------------------------------------------------- //
 
             try {
-                File f = new File("");
-                f.createTempFile("data", "xml");
-//                FileWriter fw = new FileWriter(f);
-//                fw.write("x: " + String.valueOf(x) + " y: " + String.valueOf(y) + " z: " + String.valueOf(z) + "\n");
-//                fw.close();
+                c = this.getBaseContext();
+                FileWriter fw = new FileWriter(temp, true);
+                fw.write("x: " + String.valueOf(x) + " y: " + String.valueOf(y) + " z: " + String.valueOf(z) + "\n");
+                fw.close();
 
                 // ----------- Remove after seen that write is done successfully ------- //
-/*                FileReader fr = new FileReader(f);
+                FileReader fr = new FileReader(temp);
                 int content;
                 StringBuffer sb = new StringBuffer();
                 while ((content = fr.read()) != -1) {
                     sb.append((char) content);
                 }
-                Log.i("", sb.toString());*/
+                Log.i("PRINT", sb.toString());
+                TextView t = findViewById(R.id.auxiliarText);
+                t.setText(temp.getPath());
                 // --------------------------------------------------------------------- //
 
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.i("ERROR", e.toString());
             }
         }
     }
