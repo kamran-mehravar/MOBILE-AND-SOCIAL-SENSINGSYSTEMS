@@ -9,7 +9,7 @@ import android.view.View;
 
 import java.util.NoSuchElementException;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -17,6 +17,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
     }
 
+    @Override
     public void onClick(View v) {
         if(v.getId() == R.id.dataCollectionButton) {
             Intent intent = new Intent(this, DataCollectionActivity.class);
