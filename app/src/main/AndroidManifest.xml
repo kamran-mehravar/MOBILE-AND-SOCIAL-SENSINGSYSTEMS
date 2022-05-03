@@ -10,6 +10,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VehicleDetection">
         <activity
+            android:name=".MonitorActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DataCollectionActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>

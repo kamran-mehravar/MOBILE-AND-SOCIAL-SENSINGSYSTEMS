@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_data_collection.xml" value="0.25" />
+        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_main.xml" value="0.25" />
+        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_monitor.xml" value="0.17074275362318841" />
+      </map>
+    </option>
+  </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="Android Studio default JDK" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
   </component>
