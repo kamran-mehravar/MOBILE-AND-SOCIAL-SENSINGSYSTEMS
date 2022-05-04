@@ -7,57 +7,62 @@
     tools:context=".DataCollectionActivity">
 
     <Button
-        android:id="@+id/button4"
+        android:id="@+id/carButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="36dp"
         android:layout_marginTop="76dp"
+        android:onClick="onClick"
         android:text="Car"
-        app:layout_constraintStart_toEndOf="@+id/button5"
+        app:layout_constraintStart_toEndOf="@+id/busButton"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/button5"
+        android:id="@+id/busButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="28dp"
         android:layout_marginTop="76dp"
+        android:onClick="onClick"
         android:text="Bus"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/button6"
+        android:id="@+id/walkButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="76dp"
         android:layout_marginTop="16dp"
+        android:onClick="onClick"
         android:text="Walk"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/button5" />
+        app:layout_constraintTop_toBottomOf="@+id/busButton" />
 
     <Button
-        android:id="@+id/button7"
+        android:id="@+id/trainButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="60dp"
         android:layout_marginTop="16dp"
+        android:onClick="onClick"
         android:text="Train"
-        app:layout_constraintStart_toEndOf="@+id/button6"
-        app:layout_constraintTop_toBottomOf="@+id/button4" />
+        app:layout_constraintStart_toEndOf="@+id/walkButton"
+        app:layout_constraintTop_toBottomOf="@+id/carButton" />
 
     <Button
-        android:id="@+id/button8"
+        android:id="@+id/motoButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="28dp"
         android:layout_marginTop="76dp"
+        android:onClick="onClick"
         android:text="Motorbike"
-        app:layout_constraintStart_toEndOf="@+id/button4"
+        app:layout_constraintStart_toEndOf="@+id/carButton"
         app:layout_constraintTop_toTopOf="parent" />
 
     <SeekBar
-        android:id="@+id/seekBar"
+        android:id="@+id/windowSizeBar"
         android:layout_width="224dp"
         android:layout_height="33dp"
         android:layout_marginStart="92dp"
@@ -65,55 +70,57 @@
         android:max="60"
         android:progress="1"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
+        app:layout_constraintTop_toBottomOf="@+id/windowSizeText" />
 
     <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="164dp"
-        android:layout_marginTop="40dp"
-        android:text="Window Size"
+        android:id="@+id/windowSizeText"
+        android:layout_width="139dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="144dp"
+        android:layout_marginTop="48dp"
+        android:text="Window Size    =   0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/button6" />
+        app:layout_constraintTop_toBottomOf="@+id/walkButton" />
 
     <Button
         android:id="@+id/recordButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="156dp"
-        android:layout_marginTop="48dp"
+        android:layout_marginStart="152dp"
+        android:layout_marginTop="28dp"
         android:onClick="onClick"
         android:text="Record"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/seekBar2" />
-
-    <SeekBar
-        android:id="@+id/seekBar2"
-        android:layout_width="232dp"
-        android:layout_height="24dp"
-        android:layout_marginStart="92dp"
-        android:layout_marginTop="28dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView2" />
+        app:layout_constraintTop_toBottomOf="@+id/overlappingBar" />
 
     <TextView
-        android:id="@+id/textView2"
+        android:id="@+id/overlappingText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="176dp"
-        android:layout_marginTop="28dp"
-        android:text="Overlapping"
+        android:layout_marginStart="144dp"
+        android:layout_marginTop="36dp"
+        android:text="Overlapping    =    0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/seekBar" />
+        app:layout_constraintTop_toBottomOf="@+id/windowSizeBar" />
 
     <TextView
         android:id="@+id/auxiliarText"
         android:layout_width="354dp"
         android:layout_height="96dp"
-        android:layout_marginStart="28dp"
-        android:layout_marginTop="56dp"
+        android:layout_marginStart="36dp"
+        android:layout_marginTop="36dp"
         android:textAlignment="center"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/recordButton" />
+
+    <SeekBar
+        android:id="@+id/overlappingBar"
+        android:layout_width="211dp"
+        android:layout_height="21dp"
+        android:layout_marginStart="104dp"
+        android:layout_marginTop="44dp"
+        android:max="75"
+        android:progress="0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/overlappingText" />
 </androidx.constraintlayout.widget.ConstraintLayout>

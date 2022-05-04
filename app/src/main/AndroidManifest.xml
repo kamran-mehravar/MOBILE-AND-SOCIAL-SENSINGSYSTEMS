@@ -11,12 +11,15 @@
         android:theme="@style/Theme.VehicleDetection">
         <activity
             android:name=".MonitorActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".DataCollectionActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
