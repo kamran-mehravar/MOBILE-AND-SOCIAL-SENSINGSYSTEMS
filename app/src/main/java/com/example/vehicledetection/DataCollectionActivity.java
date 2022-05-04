@@ -20,6 +20,8 @@ import java.io.FileWriter;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
@@ -44,7 +46,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     @Override
     public void onClick(View v) {
         if(v.getId() == R.id.recordButton) {
-            if (!recording) { sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); recording = true; }
+            if (!recording) { sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); recording = true; startWindowTimer(); }
             else { sm.unregisterListener(this); recording = false; }
         } else if (v.getId() == R.id.busButton) {
             removeButtonBorder();
@@ -137,10 +139,27 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             TextView t = findViewById(R.id.auxiliarText);
             t.setText(tempFiles[currentVehicle].getPath());
             // --------------------------------------------------------------------- //
-
         } catch (IOException e) {
             Log.i("ERROR", e.toString());
         }
+    }
+
+    public void startWindowTimer() {
+        Timer t = new Timer();
+        t.schedule(new TimerTask() {
+                       @Override
+                       public void run() {
+                           try {
+                               // TODO change how it writes when new window
+                               FileWriter fw = new FileWriter(tempFiles[currentVehicle], true);
+                               fw.write("---------------------------NEW WINDOW------------------------\n");
+                               fw.close();
+                           } catch (IOException e) {
+                               e.printStackTrace();
+                           }
+                       }
+                   }, windowSizeBar.getProgress()* 1000L
+        );
     }
 
     // SEEK BAR EVENT HANDLERS
