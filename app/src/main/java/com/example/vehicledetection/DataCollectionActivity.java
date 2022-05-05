@@ -15,10 +15,13 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -44,48 +47,42 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-        tempFiles[0].delete();
-        tempFiles[1].delete();
-        tempFiles[2].delete();
-        tempFiles[3].delete();
-        tempFiles[4].delete();
-        Log.i("DELETE", "Deleting");
-    }
-
-    @Override
     public void onClick(View v) {
         if(v.getId() == R.id.recordButton) {
             if (!recording) { sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); recording = true; startWindowTimer(); currentWindow = 1; }
-            else { sm.unregisterListener(this); recording = false;
-                TextView t = findViewById(R.id.auxiliarText);
-                t.setText(tempFiles[currentVehicle].getPath()); }
+            else { sm.unregisterListener(this); recording = false; }
         } else if (v.getId() == R.id.busButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.busButton);
-            b.setBackgroundResource(R.drawable.button_focus);
+            b.setEnabled(false);
             currentVehicle = 0;
         } else if (v.getId() == R.id.carButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.carButton);
-            b.setBackgroundResource(R.drawable.button_focus);
+            b.setEnabled(false);
             currentVehicle = 1;
         } else if (v.getId() == R.id.walkButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.walkButton);
-            b.setBackgroundResource(R.drawable.button_focus);
+            b.setEnabled(false);
             currentVehicle = 3;
         } else if (v.getId() == R.id.trainButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.trainButton);
-            b.setBackgroundResource(R.drawable.button_focus);
+            b.setEnabled(false);
             currentVehicle = 4;
         } else if (v.getId() == R.id.motoButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.motoButton);
-            b.setBackgroundResource(R.drawable.button_focus);
+            b.setEnabled(false);
             currentVehicle = 2;
+        } else if (v.getId() == R.id.removeFiles) {
+            File directory = new File(c.getFilesDir().getPath());
+            for (File file : Objects.requireNonNull(directory.listFiles())) {
+                if (!file.isDirectory()) {
+                    file.delete();
+                }
+            }
         } else {
             throw new NoSuchElementException();
         }
@@ -120,7 +117,15 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     public void removeButtonBorder() {
         Button b = findViewById(R.id.motoButton);
-        b.setBackgroundResource(R.drawable.button_not_focus);
+        b.setEnabled(true);
+        b = findViewById(R.id.busButton);
+        b.setEnabled(true);
+        b = findViewById(R.id.carButton);
+        b.setEnabled(true);
+        b = findViewById(R.id.walkButton);
+        b.setEnabled(true);
+        b = findViewById(R.id.trainButton);
+        b.setEnabled(true);
     }
 
     public void initTempFiles() {
@@ -151,11 +156,38 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         t.schedule(new TimerTask() {
                        @Override
                        public void run() {
+                               // if we want to optimize better we can run this function every second and delete for current second instead for each window
+                               fixDataLength();
+
                                currentWindow += 1;
                                startWindowTimer();
                        }
                    }, windowSizeBar.getProgress() * 1000L
         );
+    }
+
+    public void fixDataLength() {
+        int currentLines = 0;
+        String line;
+        // TODO this is not a good idea to count lines. How to do it: save on each window the last line and do lastFileLine - lastWindowLine
+        try {
+            FileReader fr = new FileReader(tempFiles[currentVehicle]);
+            LineNumberReader lnr = new LineNumberReader(fr);
+            while ((line = lnr.readLine()) != null) {
+                if(line.startsWith(currentWindow + ",")) {
+                    currentLines += 1;
+                }
+            }
+            fr.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(windowSizeBar.getProgress() * 40 < currentLines) {
+            Log.i("LINES", currentLines+" ");
+            /*TextView t = findViewById(R.id.auxiliarText);
+            t.setText(currentLines+"");*/
+            // TODO remove n random records
+        }
     }
 
     // SEEK BAR EVENT HANDLERS

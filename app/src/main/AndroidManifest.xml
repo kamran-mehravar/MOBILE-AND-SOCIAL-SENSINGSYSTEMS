@@ -10,17 +10,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VehicleDetection">
         <activity
-            android:name=".MonitorActivity"
-            android:screenOrientation="portrait"
+            android:name=".MachineLearningActivity"
             android:exported="false" />
+        <activity
+            android:name=".MonitorActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".DataCollectionActivity"
-            android:screenOrientation="portrait"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="portrait"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

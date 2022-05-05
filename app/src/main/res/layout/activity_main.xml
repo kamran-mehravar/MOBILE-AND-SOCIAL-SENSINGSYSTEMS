@@ -18,13 +18,13 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/button2"
+        android:id="@+id/machineLearningButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="140dp"
-        android:layout_marginTop="172dp"
+        android:layout_marginStart="96dp"
+        android:layout_marginTop="168dp"
         android:onClick="onClick"
-        android:text="Button"
+        android:text="Machine Learning"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/dataCollectionButton" />
 
@@ -32,10 +32,10 @@
         android:id="@+id/monitorButton"
         android:layout_width="190dp"
         android:layout_height="50dp"
-        android:layout_marginStart="96dp"
-        android:layout_marginTop="180dp"
+        android:layout_marginStart="108dp"
+        android:layout_marginTop="140dp"
         android:onClick="onClick"
         android:text="Monitor"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/button2" />
+        app:layout_constraintTop_toBottomOf="@+id/machineLearningButton" />
 </androidx.constraintlayout.widget.ConstraintLayout>
