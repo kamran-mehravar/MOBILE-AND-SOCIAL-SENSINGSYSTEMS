@@ -15,7 +15,6 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 
 import java.io.IOException;
@@ -31,7 +30,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private Context c;
     private File[] tempFiles;
     private SeekBar windowSizeBar, overlappingBar;
-    private int currentVehicle = -1;
+    private int currentVehicle = -1, currentWindow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,13 +40,27 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         c = this.getBaseContext();
         initTempFiles();
         initListeners();
+        removeButtonBorder();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        tempFiles[0].delete();
+        tempFiles[1].delete();
+        tempFiles[2].delete();
+        tempFiles[3].delete();
+        tempFiles[4].delete();
+        Log.i("DELETE", "Deleting");
     }
 
     @Override
     public void onClick(View v) {
         if(v.getId() == R.id.recordButton) {
-            if (!recording) { sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); recording = true; startWindowTimer(); }
-            else { sm.unregisterListener(this); recording = false; }
+            if (!recording) { sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); recording = true; startWindowTimer(); currentWindow = 1; }
+            else { sm.unregisterListener(this); recording = false;
+                TextView t = findViewById(R.id.auxiliarText);
+                t.setText(tempFiles[currentVehicle].getPath()); }
         } else if (v.getId() == R.id.busButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.busButton);
@@ -106,17 +119,18 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     public void removeButtonBorder() {
-        // TODO
+        Button b = findViewById(R.id.motoButton);
+        b.setBackgroundResource(R.drawable.button_not_focus);
     }
 
     public void initTempFiles() {
         tempFiles = new File[5];
         try {
-            tempFiles[0] = File.createTempFile("bus_data", ".xml", c.getCacheDir());
-            tempFiles[1] = File.createTempFile("car_data", ".xml", c.getCacheDir());
-            tempFiles[2] = File.createTempFile("motorbike_data", ".xml", c.getCacheDir());
-            tempFiles[3] = File.createTempFile("walk_data", ".xml", c.getCacheDir());
-            tempFiles[4] = File.createTempFile("train_data", ".xml", c.getCacheDir());
+            tempFiles[0] = File.createTempFile("bus_data", ".csv", c.getFilesDir());
+            tempFiles[1] = File.createTempFile("car_data", ".csv", c.getFilesDir());
+            tempFiles[2] = File.createTempFile("motorbike_data", ".csv", c.getFilesDir());
+            tempFiles[3] = File.createTempFile("walk_data", ".csv", c.getFilesDir());
+            tempFiles[4] = File.createTempFile("train_data", ".csv", c.getFilesDir());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -125,20 +139,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     public void writeOnFile(float x, float y, float z) {
         try {
             FileWriter fw = new FileWriter(tempFiles[currentVehicle], true);
-            fw.write("x: " + x + " y: " + y + " z: " + z + "\n");
+            fw.write(currentWindow + "," + x + "," + y + "," + z + "\n");
             fw.close();
-
-            // ----------- Remove after seen that write is done successfully ------- //
-            FileReader fr = new FileReader(tempFiles[currentVehicle]);
-            int content;
-            StringBuffer sb = new StringBuffer();
-            while ((content = fr.read()) != -1) {
-                sb.append((char) content);
-            }
-            Log.i("PRINT"+currentVehicle, sb.toString());
-            TextView t = findViewById(R.id.auxiliarText);
-            t.setText(tempFiles[currentVehicle].getPath());
-            // --------------------------------------------------------------------- //
         } catch (IOException e) {
             Log.i("ERROR", e.toString());
         }
@@ -149,16 +151,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         t.schedule(new TimerTask() {
                        @Override
                        public void run() {
-                           try {
-                               // TODO change how it writes when new window
-                               FileWriter fw = new FileWriter(tempFiles[currentVehicle], true);
-                               fw.write("---------------------------NEW WINDOW------------------------\n");
-                               fw.close();
-                           } catch (IOException e) {
-                               e.printStackTrace();
-                           }
+                               currentWindow += 1;
+                               startWindowTimer();
                        }
-                   }, windowSizeBar.getProgress()* 1000L
+                   }, windowSizeBar.getProgress() * 1000L
         );
     }
 

@@ -3,7 +3,9 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable/btn_default.xml" value="0.215" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable/button_focus.xml" value="0.1945" />
+        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable/button_not_focus.xml" value="0.1" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_data_collection.xml" value="0.25" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_main.xml" value="0.25" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_monitor.xml" value="0.17074275362318841" />
