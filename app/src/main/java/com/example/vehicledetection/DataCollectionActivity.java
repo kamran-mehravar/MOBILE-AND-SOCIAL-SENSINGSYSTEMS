@@ -20,10 +20,15 @@ import java.io.FileWriter;
 
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Stream;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
@@ -167,27 +172,40 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     public void fixDataLength() {
-        int currentLines = 0;
+        long lineCount;
         String line;
-        // TODO this is not a good idea to count lines. How to do it: save on each window the last line and do lastFileLine - lastWindowLine
         try {
-            FileReader fr = new FileReader(tempFiles[currentVehicle]);
-            LineNumberReader lnr = new LineNumberReader(fr);
-            while ((line = lnr.readLine()) != null) {
-                if(line.startsWith(currentWindow + ",")) {
-                    currentLines += 1;
+            Stream<String> stream = Files.lines(tempFiles[currentVehicle].toPath(), StandardCharsets.UTF_8);
+            lineCount = stream.count();
+            Log.i("LINES", lineCount+"");
+            if(windowSizeBar.getProgress() * 40 < lineCount) {
+                FileReader fr = new FileReader(tempFiles[currentVehicle]);
+                FileWriter fw = new FileWriter(tempFiles[currentVehicle]);
+                LineNumberReader lnr = new LineNumberReader(fr);
+                String[] randomNumbers = generateRandomNumbers(((int)lineCount - ((currentWindow - 1) * 40 * windowSizeBar.getProgress())) - (40 * windowSizeBar.getProgress()), (currentWindow - 1) * 40, (int)lineCount);
+                while ((line = lnr.readLine()) != null) {
+                    if (Arrays.stream(randomNumbers).anyMatch(Long.toString(lnr.getLineNumber())::equals)) {
+                        //fw.write(System.getProperty("line.separator"));
+                    }
                 }
             }
-            fr.close();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        if(windowSizeBar.getProgress() * 40 < currentLines) {
-            Log.i("LINES", currentLines+" ");
-            /*TextView t = findViewById(R.id.auxiliarText);
-            t.setText(currentLines+"");*/
-            // TODO remove n random records
+    }
+
+    private String[] generateRandomNumbers(int n, int min, int max) {
+        Random rnd = new Random();
+        String[] randoms = new String[n];
+        String num;
+        for (int i = 0; i < n;) {
+            num = Integer.toString(rnd.nextInt(max - min + 1) + min);
+            if (!Arrays.stream(randoms).anyMatch(num::equals)) {
+                randoms[i] = num;
+                i++;
+            }
         }
+        return randoms;
     }
 
     // SEEK BAR EVENT HANDLERS
