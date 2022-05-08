@@ -41,6 +41,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private SeekBar windowSizeBar, overlappingBar;
     private int currentVehicle = -1, currentWindow;
     private StringBuffer currentData;
+    private Timer timer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,13 +52,14 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         initTempFiles();
         initListeners();
         removeButtonBorder();
+        timer = new Timer();
     }
 
     @Override
     public void onClick(View v) {
         if(v.getId() == R.id.recordButton) {
             if (!recording) { sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); recording = true; startWindowTimer(); currentWindow = 1; currentData = new StringBuffer(); }
-            else { sm.unregisterListener(this); recording = false; }
+            else { sm.unregisterListener(this); recording = false; timer.cancel(); }
         } else if (v.getId() == R.id.busButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.busButton);
@@ -159,23 +161,25 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     public void startWindowTimer() {
-        Timer t = new Timer();
-        t.schedule(new TimerTask() {
-                       @Override
-                       public void run() {
-                               // if we want to optimize better we can run this function every second and delete for current second instead for each window
-                               String fixedData = fixDataLength();
-                               writeOnFile(fixedData);
-                               currentData = new StringBuffer(); // Remove all data after writing for next record
-                               currentWindow += 1;
-                               startWindowTimer();
-                       }
-                   }, windowSizeBar.getProgress() * 1000L
-        );
+        try {
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    String fixedData = fixDataLength();
+                    writeOnFile(fixedData);
+                    currentData = new StringBuffer(); // Remove all data after writing for next record
+                    currentWindow += 1;
+                    startWindowTimer();
+                }
+            }, windowSizeBar.getProgress() * 1000L, 100000000);
+        } catch (Exception e) {
+            Log.i("ERROR", e.toString());
+        }
     }
 
     public String fixDataLength() {
         int lineCount;
+        sm.unregisterListener(this);
         StringBuffer fixedData = new StringBuffer();
         try {
             lineCount = countLines(currentData.toString());
@@ -188,10 +192,12 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     if (!Arrays.stream(randoms).anyMatch(Integer.toString(i)::equals)) {
                         fixedData.append(sc.nextLine()+"\n");
                     } else {
+                        eliminadas++;
                         sc.nextLine();
                     }
                     i++;
                 }
+                sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
                 return fixedData.toString();
             }
         } catch (Exception e) {
@@ -201,11 +207,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     private int countLines(String data) {
-        int index = data.indexOf('\n');
+        Scanner sc = new Scanner(data);
         int i = 0;
-        while (index != -1) {
+        while (sc.hasNextLine()) {
+            sc.nextLine();
             i++;
-            index = data.indexOf('\n', index + 1);
         }
         return i;
     }
