@@ -180,7 +180,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         try {
             lineCount = countLines(currentData.toString());
             if(windowSizeBar.getProgress() * 40 < lineCount) {
-                String[] randoms = generateRandomNumbers(lineCount - 40, lineCount);
+                String[] randoms = generateRandomNumbers(lineCount - (40 * windowSizeBar.getProgress()), lineCount);
                 Scanner sc = new Scanner(currentData.toString());
                 // Iter over string lines
                 int i = 0;
