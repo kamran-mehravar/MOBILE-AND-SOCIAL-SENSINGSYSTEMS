@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Stream;
@@ -39,6 +40,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private File[] tempFiles;
     private SeekBar windowSizeBar, overlappingBar;
     private int currentVehicle = -1, currentWindow;
+    private StringBuffer currentData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +56,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     @Override
     public void onClick(View v) {
         if(v.getId() == R.id.recordButton) {
-            if (!recording) { sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); recording = true; startWindowTimer(); currentWindow = 1; }
+            if (!recording) { sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); recording = true; startWindowTimer(); currentWindow = 1; currentData = new StringBuffer(); }
             else { sm.unregisterListener(this); recording = false; }
         } else if (v.getId() == R.id.busButton) {
             removeButtonBorder();
@@ -99,7 +101,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             float x = event.values[0];
             float y = event.values[1];
             float z = event.values[2];
-            writeOnFile(x, y, z);
+            currentData.append(currentWindow + "," + x + "," + y + "," + z + "\n");
         }
     }
 
@@ -146,10 +148,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
-    public void writeOnFile(float x, float y, float z) {
+    public void writeOnFile(String data) {
         try {
             FileWriter fw = new FileWriter(tempFiles[currentVehicle], true);
-            fw.write(currentWindow + "," + x + "," + y + "," + z + "\n");
+            fw.write(data);
             fw.close();
         } catch (IOException e) {
             Log.i("ERROR", e.toString());
@@ -162,8 +164,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                        @Override
                        public void run() {
                                // if we want to optimize better we can run this function every second and delete for current second instead for each window
-                               fixDataLength();
-
+                               String fixedData = fixDataLength();
+                               writeOnFile(fixedData);
+                               currentData = new StringBuffer(); // Remove all data after writing for next record
                                currentWindow += 1;
                                startWindowTimer();
                        }
@@ -171,35 +174,48 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         );
     }
 
-    public void fixDataLength() {
-        long lineCount;
-        String line;
+    public String fixDataLength() {
+        int lineCount;
+        StringBuffer fixedData = new StringBuffer();
         try {
-            Stream<String> stream = Files.lines(tempFiles[currentVehicle].toPath(), StandardCharsets.UTF_8);
-            lineCount = stream.count();
-            Log.i("LINES", lineCount+"");
+            lineCount = countLines(currentData.toString());
             if(windowSizeBar.getProgress() * 40 < lineCount) {
-                FileReader fr = new FileReader(tempFiles[currentVehicle]);
-                FileWriter fw = new FileWriter(tempFiles[currentVehicle]);
-                LineNumberReader lnr = new LineNumberReader(fr);
-                String[] randomNumbers = generateRandomNumbers(((int)lineCount - ((currentWindow - 1) * 40 * windowSizeBar.getProgress())) - (40 * windowSizeBar.getProgress()), (currentWindow - 1) * 40, (int)lineCount);
-                while ((line = lnr.readLine()) != null) {
-                    if (Arrays.stream(randomNumbers).anyMatch(Long.toString(lnr.getLineNumber())::equals)) {
-                        //fw.write(System.getProperty("line.separator"));
+                String[] randoms = generateRandomNumbers(lineCount - 40, lineCount);
+                Scanner sc = new Scanner(currentData.toString());
+                // Iter over string lines
+                int i = 0;
+                while (sc.hasNextLine()) {
+                    if (!Arrays.stream(randoms).anyMatch(Integer.toString(i)::equals)) {
+                        fixedData.append(sc.nextLine()+"\n");
+                    } else {
+                        sc.nextLine();
                     }
+                    i++;
                 }
+                return fixedData.toString();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return currentData.toString();
     }
 
-    private String[] generateRandomNumbers(int n, int min, int max) {
+    private int countLines(String data) {
+        int index = data.indexOf('\n');
+        int i = 0;
+        while (index != -1) {
+            i++;
+            index = data.indexOf('\n', index + 1);
+        }
+        return i;
+    }
+
+    private String[] generateRandomNumbers(int n, int max) {
         Random rnd = new Random();
         String[] randoms = new String[n];
         String num;
         for (int i = 0; i < n;) {
-            num = Integer.toString(rnd.nextInt(max - min + 1) + min);
+            num = Integer.toString(rnd.nextInt(max));
             if (!Arrays.stream(randoms).anyMatch(num::equals)) {
                 randoms[i] = num;
                 i++;
