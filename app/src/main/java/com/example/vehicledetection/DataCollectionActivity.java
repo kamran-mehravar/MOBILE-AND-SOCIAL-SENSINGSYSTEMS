@@ -2,6 +2,7 @@ package com.example.vehicledetection;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -21,15 +22,15 @@ import java.io.FileWriter;
 
 import java.io.IOException;
 
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Random;
-import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
 
+// TODO Hay que iniciar el objeto data window
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
+
+    private static final int RECORDS_SEC = 40;
 
     private Sensor sAcceleration;
     private SensorManager sm;
@@ -40,6 +41,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private int currentVehicle = -1, currentWindow;
     private StringBuffer currentData;
     private Timer timer;
+    private DataWindow window;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +53,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         initListeners();
         removeButtonBorder();
         timer = new Timer();
+        window = new DataWindow(RECORDS_SEC);
     }
 
     @Override
@@ -101,7 +104,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             float x = event.values[0];
             float y = event.values[1];
             float z = event.values[2];
-            currentData.append(currentWindow + "," + x + "," + y + "," + z + "\n");
+            currentData.append(currentWindow).append(",").append(x).append(",").append(y).append(",").append(z).append("\n");
         }
     }
 
@@ -109,6 +112,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         Chronometer focus = (Chronometer) findViewById(R.id.chronometer1);
         sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
         recording = true;
+        this.window.setWindow_time(windowSizeBar.getProgress());
         startWindowTimer();
         currentWindow = 1;
         currentData = new StringBuffer();
@@ -117,7 +121,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     private void stopRecording() {
-        Chronometer focus = (Chronometer) findViewById(R.id.chronometer1);
+        Chronometer focus = findViewById(R.id.chronometer1);
         sm.unregisterListener(this);
         recording = false;
         timer.cancel();
@@ -133,6 +137,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         sAcceleration = sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
     }
 
+    @SuppressLint("NewApi")
     public void initListeners() {
         windowSizeBar = findViewById(R.id.windowSizeBar);
         windowSizeBar.setOnSeekBarChangeListener(this);
@@ -183,7 +188,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    String fixedData = fixDataLength();
+                    window.setData(new StringBuffer(currentData.toString()));
+                    String fixedData = window.fixDataLength();
                     writeOnFile(fixedData);
                     currentData = new StringBuffer(); // Remove all data after writing for next record
                     currentWindow += 1;
@@ -195,58 +201,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
-    public String fixDataLength() {
-        int lineCount;
-        sm.unregisterListener(this);
-        StringBuffer fixedData = new StringBuffer();
-        try {
-            lineCount = countLines(currentData.toString());
-            if(windowSizeBar.getProgress() * 40 < lineCount) {
-                String[] randoms = generateRandomNumbers(lineCount - (40 * windowSizeBar.getProgress()), lineCount);
-                Scanner sc = new Scanner(currentData.toString());
-                // Iter over string lines
-                int i = 0;
-                while (sc.hasNextLine()) {
-                    if (!Arrays.stream(randoms).anyMatch(Integer.toString(i)::equals)) {
-                        fixedData.append(sc.nextLine()+"\n");
-                    } else {
-                        sc.nextLine();
-                    }
-                    i++;
-                }
-                sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
-                return fixedData.toString();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return currentData.toString();
-    }
-
-    private int countLines(String data) {
-        Scanner sc = new Scanner(data);
-        int i = 0;
-        while (sc.hasNextLine()) {
-            sc.nextLine();
-            i++;
-        }
-        return i;
-    }
-
-    private String[] generateRandomNumbers(int n, int max) {
-        Random rnd = new Random();
-        String[] randoms = new String[n];
-        String num;
-        for (int i = 0; i < n;) {
-            num = Integer.toString(rnd.nextInt(max));
-            if (!Arrays.stream(randoms).anyMatch(num::equals)) {
-                randoms[i] = num;
-                i++;
-            }
-        }
-        return randoms;
-    }
-
     // SEEK BAR EVENT HANDLERS
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
@@ -255,7 +209,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             t.setText("Window Size    =   " + windowSizeBar.getProgress());
         } else if (seekBar.getId() == R.id.overlappingBar) {
             progress = progress / 25;
-            progress = progress * 25;
+            progress = progress * 25;   
             ((TextView)findViewById(R.id.overlappingText)).setText("Overlapping    =   " + progress);
         } else {
             throw new NoSuchElementException();
