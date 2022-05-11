@@ -8,20 +8,19 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Chronometer;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 
 import java.io.IOException;
-import java.io.LineNumberReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -29,7 +28,6 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.stream.Stream;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
@@ -58,8 +56,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     @Override
     public void onClick(View v) {
         if(v.getId() == R.id.recordButton) {
-            if (!recording) { sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); recording = true; startWindowTimer(); currentWindow = 1; currentData = new StringBuffer(); }
-            else { sm.unregisterListener(this); recording = false; timer.cancel(); }
+            if (!recording) { startRecording(); }
+            else { stopRecording(); }
         } else if (v.getId() == R.id.busButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.busButton);
@@ -105,6 +103,26 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             float z = event.values[2];
             currentData.append(currentWindow + "," + x + "," + y + "," + z + "\n");
         }
+    }
+
+    private void startRecording() {
+        Chronometer focus = (Chronometer) findViewById(R.id.chronometer1);
+        sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
+        recording = true;
+        startWindowTimer();
+        currentWindow = 1;
+        currentData = new StringBuffer();
+        focus.setBase(SystemClock.elapsedRealtime());
+        focus.start();
+    }
+
+    private void stopRecording() {
+        Chronometer focus = (Chronometer) findViewById(R.id.chronometer1);
+        sm.unregisterListener(this);
+        recording = false;
+        timer.cancel();
+        focus.setBase(SystemClock.elapsedRealtime());
+        focus.stop();
     }
 
     @Override
@@ -192,7 +210,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     if (!Arrays.stream(randoms).anyMatch(Integer.toString(i)::equals)) {
                         fixedData.append(sc.nextLine()+"\n");
                     } else {
-                        eliminadas++;
                         sc.nextLine();
                     }
                     i++;
