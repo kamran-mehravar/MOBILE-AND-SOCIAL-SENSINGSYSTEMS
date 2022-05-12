@@ -1,32 +1,34 @@
 package com.example.vehicledetection;
 
+import android.util.Log;
+
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
 
 public class DataWindow {
 
-    private StringBuffer data;
-    private int window_time;
+    private StringBuilder data;
+    private double window_time;
     private int records_sec;
 
     public DataWindow(int records_sec) {
         this.setRecords_sec(records_sec);
     }
 
-    public StringBuffer getData() {
+    public StringBuilder getData() {
         return data;
     }
 
-    public void setData(StringBuffer data) {
+    public void setData(StringBuilder data) {
         this.data = data;
     }
 
-    public int getWindow_time() {
+    public double getWindow_time() {
         return window_time;
     }
 
-    public void setWindow_time(int window_time) {
+    public void setWindow_time(double window_time) {
         this.window_time = window_time;
     }
 
@@ -44,7 +46,7 @@ public class DataWindow {
         try {
             lineCount = countLines(data.toString());
             if(this.getWindow_time() * this.getRecords_sec() < lineCount) {
-                String[] randoms = generateRandomNumbers(lineCount - (this.getRecords_sec() * this.getWindow_time()), lineCount);
+                String[] randoms = generateRandomNumbers((int)(lineCount - (this.getRecords_sec() * this.getWindow_time())), lineCount);
                 Scanner sc = new Scanner(this.getData().toString());
                 // Iter over string lines
                 int i = 0;
@@ -64,7 +66,7 @@ public class DataWindow {
         return data.toString();
     }
 
-    private int countLines(String data) {
+    public int countLines(String data) {
         Scanner sc = new Scanner(data);
         int i = 0;
         while (sc.hasNextLine()) {

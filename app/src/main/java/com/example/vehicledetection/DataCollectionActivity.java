@@ -22,12 +22,14 @@ import java.io.FileWriter;
 
 import java.io.IOException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
-// TODO Hay que iniciar el objeto data window
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
     private static final int RECORDS_SEC = 40;
@@ -39,7 +41,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private File[] tempFiles;
     private SeekBar windowSizeBar, overlappingBar;
     private int currentVehicle = -1, currentWindow;
-    private StringBuffer currentData;
+    private StringBuilder[] currentData = new StringBuilder[2];
     private Timer timer;
     private DataWindow window;
 
@@ -104,7 +106,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             float x = event.values[0];
             float y = event.values[1];
             float z = event.values[2];
-            currentData.append(currentWindow).append(",").append(x).append(",").append(y).append(",").append(z).append("\n");
+            currentData[1].append(currentWindow).append(",").append(x).append(",").append(y).append(",").append(z).append("\n");
         }
     }
 
@@ -113,9 +115,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
         recording = true;
         this.window.setWindow_time(windowSizeBar.getProgress());
-        startWindowTimer();
+        startWindowTimer(true);
         currentWindow = 1;
-        currentData = new StringBuffer();
+        currentData[0] = new StringBuilder();
+        currentData[1] = new StringBuilder();
         focus.setBase(SystemClock.elapsedRealtime());
         focus.start();
     }
@@ -183,21 +186,46 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
-    public void startWindowTimer() {
+    public void startWindowTimer(boolean first) {
+        double delay;
+        if (first) delay = windowSizeBar.getProgress() * 1000L;
+        else delay = windowSizeBar.getProgress() * 1000L - (windowSizeBar.getProgress() * ((double)overlappingBar.getProgress()/100) * 1000L);
+        Log.i("OVERLAP", delay + "");
         try {
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    window.setData(new StringBuffer(currentData.toString()));
+                    window.setData(new StringBuilder(currentData[1].toString()));
+                    window.setWindow_time(delay/1000);
                     String fixedData = window.fixDataLength();
+                    Log.i("LINES", "Fixed lines: " + window.countLines(fixedData));
+                    writeOnFile(currentData[0].toString());
                     writeOnFile(fixedData);
-                    currentData = new StringBuffer(); // Remove all data after writing for next record
-                    currentWindow += 1;
-                    startWindowTimer();
+                    double overlaplines = ((double)overlappingBar.getProgress()/100) * RECORDS_SEC * windowSizeBar.getProgress();
+                    Log.i("OVERLAP", overlaplines + "");
+                    String nextLines = getLastLines(fixedData, (int)overlaplines);
+                    currentWindow++;
+                    currentData[0] = new StringBuilder(nextLines+"\n");
+                    currentData[1] = new StringBuilder(); // Remove all data after writing for next record
+                    startWindowTimer(false);
                 }
-            }, windowSizeBar.getProgress() * 1000L, 100000000);
+            }, (long) delay);
         } catch (Exception e) {
             Log.i("ERROR", e.toString());
+        }
+    }
+
+    private String getLastLines(String string, int numLines) {
+        try {
+            List<String> lines = Arrays.asList(string.split("\n"));
+            ArrayList<String> tempArray = new ArrayList<>(lines.subList(Math.max(0, lines.size() - numLines), lines.size()));
+            for(int i = 0; i < tempArray.size(); i++) {
+                tempArray.set(i, tempArray.get(i).replaceFirst(currentWindow+"", (currentWindow+1)+""));
+            }
+            return String.join("\n", tempArray);
+        } catch (Exception e) {
+            Log.i("ERROR", e.toString());
+            return "";
         }
     }
 
@@ -209,7 +237,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             t.setText("Window Size    =   " + windowSizeBar.getProgress());
         } else if (seekBar.getId() == R.id.overlappingBar) {
             progress = progress / 25;
-            progress = progress * 25;   
+            progress = progress * 25;
             ((TextView)findViewById(R.id.overlappingText)).setText("Overlapping    =   " + progress);
         } else {
             throw new NoSuchElementException();
