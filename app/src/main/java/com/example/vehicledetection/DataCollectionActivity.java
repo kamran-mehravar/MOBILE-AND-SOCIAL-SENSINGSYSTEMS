@@ -40,7 +40,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private Context c;
     private File[] tempFiles;
     private SeekBar windowSizeBar, overlappingBar;
-    private int currentVehicle = -1, currentWindow;
+    private int currentVehicle = -1, currentWindow, overlapProgress;
     private StringBuilder[] currentData = new StringBuilder[2];
     private Timer timer;
     private DataWindow window;
@@ -189,8 +189,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     public void startWindowTimer(boolean first) {
         double delay;
         if (first) delay = windowSizeBar.getProgress() * 1000L;
-        else delay = windowSizeBar.getProgress() * 1000L - (windowSizeBar.getProgress() * ((double)overlappingBar.getProgress()/100) * 1000L);
-        Log.i("OVERLAP", delay + "");
+        else delay = windowSizeBar.getProgress() * 1000L - (windowSizeBar.getProgress() * ((double)overlapProgress/100) * 1000L);
+        Log.i("OVERLAP", overlapProgress + "");
         try {
             timer.schedule(new TimerTask() {
                 @Override
@@ -201,8 +201,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     Log.i("LINES", "Fixed lines: " + window.countLines(fixedData));
                     writeOnFile(currentData[0].toString());
                     writeOnFile(fixedData);
-                    double overlaplines = ((double)overlappingBar.getProgress()/100) * RECORDS_SEC * windowSizeBar.getProgress();
-                    Log.i("OVERLAP", overlaplines + "");
+                    double overlaplines = ((double)overlapProgress/100) * RECORDS_SEC * windowSizeBar.getProgress();
+                    //Log.i("OVERLAP", overlaplines + "");
                     String nextLines = getLastLines(fixedData, (int)overlaplines);
                     currentWindow++;
                     currentData[0] = new StringBuilder(nextLines+"\n");
@@ -236,12 +236,16 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             TextView t = findViewById(R.id.windowSizeText);
             t.setText("Window Size    =   " + windowSizeBar.getProgress());
         } else if (seekBar.getId() == R.id.overlappingBar) {
-            progress = progress / 25;
-            progress = progress * 25;
-            ((TextView)findViewById(R.id.overlappingText)).setText("Overlapping    =   " + progress);
+            manageBarProgress(progress);
+            ((TextView)findViewById(R.id.overlappingText)).setText("Overlapping    =   " + overlapProgress);
         } else {
             throw new NoSuchElementException();
         }
+    }
+
+    private void manageBarProgress(int overlapProgress) {
+        this.overlapProgress = overlapProgress / 25;
+        this.overlapProgress = this.overlapProgress * 25;
     }
 
     @Override
