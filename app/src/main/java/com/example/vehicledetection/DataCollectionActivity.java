@@ -147,7 +147,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         windowSizeBar.setMin(1);
         overlappingBar = findViewById(R.id.overlappingBar);
         overlappingBar.setOnSeekBarChangeListener(this);
-        overlappingBar.setMin(25);
     }
 
     public void removeButtonBorder() {
@@ -190,7 +189,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         double delay;
         if (first) delay = windowSizeBar.getProgress() * 1000L;
         else delay = windowSizeBar.getProgress() * 1000L - (windowSizeBar.getProgress() * ((double)overlapProgress/100) * 1000L);
-        Log.i("OVERLAP", overlapProgress + "");
         try {
             timer.schedule(new TimerTask() {
                 @Override
@@ -198,12 +196,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     window.setData(new StringBuilder(currentData[1].toString()));
                     window.setWindow_time(delay/1000);
                     String fixedData = window.fixDataLength();
-                    Log.i("LINES", "Fixed lines: " + window.countLines(fixedData));
                     writeOnFile(currentData[0].toString());
                     writeOnFile(fixedData);
                     double overlaplines = ((double)overlapProgress/100) * RECORDS_SEC * windowSizeBar.getProgress();
-                    //Log.i("OVERLAP", overlaplines + "");
-                    String nextLines = getLastLines(fixedData, (int)overlaplines);
+                    String nextLines = getLastLines(currentData[0].toString() + fixedData, (int)overlaplines);
                     currentWindow++;
                     currentData[0] = new StringBuilder(nextLines+"\n");
                     currentData[1] = new StringBuilder(); // Remove all data after writing for next record
