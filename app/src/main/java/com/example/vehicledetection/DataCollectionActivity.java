@@ -33,12 +33,17 @@ import java.util.TimerTask;
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
     private static final int RECORDS_SEC = 40;
+    private static final int BUS = 0;
+    private static final int CAR = 1;
+    private static final int MOTO = 2;
+    private static final int WALK = 3;
+    private static final int TRAIN = 4;
 
     private Sensor sAcceleration;
     private SensorManager sm;
     private boolean recording = false;
     private Context c;
-    private File[] tempFiles;
+    private File dataFile; // TODO remove array
     private SeekBar windowSizeBar, overlappingBar;
     private int currentVehicle = -1, currentWindow, overlapProgress;
     private StringBuilder[] currentData = new StringBuilder[2];
@@ -67,27 +72,27 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             removeButtonBorder();
             Button b = v.findViewById(R.id.busButton);
             b.setEnabled(false);
-            currentVehicle = 0;
+            currentVehicle = this.BUS;
         } else if (v.getId() == R.id.carButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.carButton);
             b.setEnabled(false);
-            currentVehicle = 1;
+            currentVehicle = this.CAR;
         } else if (v.getId() == R.id.walkButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.walkButton);
             b.setEnabled(false);
-            currentVehicle = 3;
+            currentVehicle = this.WALK;
         } else if (v.getId() == R.id.trainButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.trainButton);
             b.setEnabled(false);
-            currentVehicle = 4;
+            currentVehicle = this.TRAIN;
         } else if (v.getId() == R.id.motoButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.motoButton);
             b.setEnabled(false);
-            currentVehicle = 2;
+            currentVehicle = this.MOTO;
         } else if (v.getId() == R.id.removeFiles) {
             File directory = new File(c.getFilesDir().getPath());
             for (File file : Objects.requireNonNull(directory.listFiles())) {
@@ -106,7 +111,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             float x = event.values[0];
             float y = event.values[1];
             float z = event.values[2];
-            currentData[1].append(currentWindow).append(",").append(x).append(",").append(y).append(",").append(z).append("\n");
+            currentData[1].append(",").append(x).append(",").append(y).append(",").append(z);
         }
     }
 
@@ -115,10 +120,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
         recording = true;
         this.window.setWindow_time(windowSizeBar.getProgress());
-        startWindowTimer(true);
-        currentWindow = 1;
         currentData[0] = new StringBuilder();
         currentData[1] = new StringBuilder();
+        startWindowTimer(true);
+        currentWindow = 1;
         focus.setBase(SystemClock.elapsedRealtime());
         focus.start();
     }
@@ -163,21 +168,12 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     public void initTempFiles() {
-        tempFiles = new File[5];
-        try {
-            tempFiles[0] = File.createTempFile("bus_data", ".csv", c.getFilesDir());
-            tempFiles[1] = File.createTempFile("car_data", ".csv", c.getFilesDir());
-            tempFiles[2] = File.createTempFile("motorbike_data", ".csv", c.getFilesDir());
-            tempFiles[3] = File.createTempFile("walk_data", ".csv", c.getFilesDir());
-            tempFiles[4] = File.createTempFile("train_data", ".csv", c.getFilesDir());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        dataFile = new File(c.getFilesDir(), "data_collection.csv");
     }
 
     public void writeOnFile(String data) {
         try {
-            FileWriter fw = new FileWriter(tempFiles[currentVehicle], true);
+            FileWriter fw = new FileWriter(dataFile, true);
             fw.write(data);
             fw.close();
         } catch (IOException e) {
@@ -189,6 +185,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         double delay;
         if (first) delay = windowSizeBar.getProgress() * 1000L;
         else delay = windowSizeBar.getProgress() * 1000L - (windowSizeBar.getProgress() * ((double)overlapProgress/100) * 1000L);
+        currentData[0].append(currentVehicle).append(",").append("INSERT RANDOM");
         try {
             timer.schedule(new TimerTask() {
                 @Override
@@ -197,11 +194,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     window.setWindow_time(delay/1000);
                     String fixedData = window.fixDataLength();
                     writeOnFile(currentData[0].toString());
-                    writeOnFile(fixedData);
+                    writeOnFile(fixedData + "\n");
                     double overlaplines = ((double)overlapProgress/100) * RECORDS_SEC * windowSizeBar.getProgress();
                     String nextLines = getLastLines(currentData[0].toString() + fixedData, (int)overlaplines);
                     currentWindow++;
-                    currentData[0] = new StringBuilder(nextLines+"\n");
+                    currentData[0] = new StringBuilder(nextLines);
                     currentData[1] = new StringBuilder(); // Remove all data after writing for next record
                     startWindowTimer(false);
                 }
