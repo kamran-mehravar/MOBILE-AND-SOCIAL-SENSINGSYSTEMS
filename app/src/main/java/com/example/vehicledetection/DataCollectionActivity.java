@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
@@ -174,6 +175,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     public void writeOnFile(String data) {
         try {
             FileWriter fw = new FileWriter(dataFile, true);
+            //Log.i("LINES", "Lines to write: " + data.split(",").length);
             fw.write(data);
             fw.close();
         } catch (IOException e) {
@@ -185,7 +187,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         double delay;
         if (first) delay = windowSizeBar.getProgress() * 1000L;
         else delay = windowSizeBar.getProgress() * 1000L - (windowSizeBar.getProgress() * ((double)overlapProgress/100) * 1000L);
-        currentData[0].append(currentVehicle).append(",").append("INSERT RANDOM");
+        currentData[0].append(currentVehicle).append(",").append(UUID.randomUUID().getMostSignificantBits());
         try {
             timer.schedule(new TimerTask() {
                 @Override
@@ -193,7 +195,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     window.setData(new StringBuilder(currentData[1].toString()));
                     window.setWindow_time(delay/1000);
                     String fixedData = window.fixDataLength();
-                    writeOnFile(currentData[0].toString());
+                    Log.i("LINES", "" + fixedData.split(",").length);
+                    writeOnFile("," + currentData[0].toString());
                     writeOnFile(fixedData + "\n");
                     double overlaplines = ((double)overlapProgress/100) * RECORDS_SEC * windowSizeBar.getProgress();
                     String nextLines = getLastLines(currentData[0].toString() + fixedData, (int)overlaplines);
@@ -210,12 +213,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     private String getLastLines(String string, int numLines) {
         try {
-            List<String> lines = Arrays.asList(string.split("\n"));
-            ArrayList<String> tempArray = new ArrayList<>(lines.subList(Math.max(0, lines.size() - numLines), lines.size()));
-            for(int i = 0; i < tempArray.size(); i++) {
-                tempArray.set(i, tempArray.get(i).replaceFirst(currentWindow+"", (currentWindow+1)+""));
-            }
-            return String.join("\n", tempArray);
+            List<String> lines = Arrays.asList(string.split(","));
+            ArrayList<String> tempArray = new ArrayList<>(lines.subList(Math.max(0, lines.size() - (numLines * 3)), lines.size()));
+            return String.join(",", tempArray);
         } catch (Exception e) {
             Log.i("ERROR", e.toString());
             return "";
