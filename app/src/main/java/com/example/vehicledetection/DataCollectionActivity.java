@@ -44,7 +44,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private SensorManager sm;
     private boolean recording = false;
     private Context c;
-    private File dataFile; // TODO remove array
+    private File dataFile;
     private SeekBar windowSizeBar, overlappingBar;
     private int currentVehicle = -1, currentWindow, overlapProgress;
     private StringBuilder[] currentData = new StringBuilder[2];
@@ -131,7 +131,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     private void stopRecording() {
         Chronometer focus = findViewById(R.id.chronometer1);
-        sm.unregisterListener(this);
+        sm.unregisterListener(this, sAcceleration);
         recording = false;
         timer.cancel();
         focus.setBase(SystemClock.elapsedRealtime());
@@ -170,6 +170,20 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     public void initTempFiles() {
         dataFile = new File(c.getFilesDir(), "data_collection.csv");
+        if (!dataFile.exists()) {
+            StringBuilder init = new StringBuilder("LABEL,UUID");
+            // TODO change number somehow
+            for (int i = 0; i < 200; i++) {
+                init.append(",accx").append(i).append(",accy").append(i).append(",accz").append(i);
+            }
+            try {
+                FileWriter fw = new FileWriter(dataFile);
+                fw.write(init.toString() + "\n");
+                fw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void writeOnFile(String data) {
@@ -183,6 +197,14 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
+    public void stopListeners() {
+        sm.unregisterListener(this, sAcceleration);
+    }
+
+    public void startListeners() {
+        sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
+    }
+
     public void startWindowTimer(boolean first) {
         double delay;
         if (first) delay = windowSizeBar.getProgress() * 1000L;
@@ -194,10 +216,12 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                 public void run() {
                     window.setData(new StringBuilder(currentData[1].toString()));
                     window.setWindow_time(delay/1000);
+                    stopListeners();
                     String fixedData = window.fixDataLength();
+                    startListeners();
                     Log.i("LINES", "" + fixedData.split(",").length);
-                    writeOnFile("," + currentData[0].toString());
-                    writeOnFile(fixedData + "\n");
+                    writeOnFile(currentData[0].toString());
+                    writeOnFile("," + fixedData + "\n");
                     double overlaplines = ((double)overlapProgress/100) * RECORDS_SEC * windowSizeBar.getProgress();
                     String nextLines = getLastLines(currentData[0].toString() + fixedData, (int)overlaplines);
                     currentWindow++;
