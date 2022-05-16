@@ -48,15 +48,13 @@ public class DataWindow {
         try {
             String[] dividedData = this.getData().toString().split(",");
             lineCount = dividedData.length / 3;
-            Log.i("LINES","Number of lines: " + lineCount);
             if(this.getWindow_time() * this.getRecords_sec() < lineCount) {
                 int[] randoms = generateRandomNumbers((int)(lineCount - (this.getRecords_sec() * this.getWindow_time())), lineCount);
                 Scanner sc = new Scanner(this.getData().toString());
-                Log.i("LINES", "Randoms generated: " + randoms.length + "");
                 for(int i = 0; i < randoms.length; i++) {
-                    dividedData[randoms[i]*3+1] = null;
-                    dividedData[(randoms[i]*3)+2] = null;
-                    dividedData[(randoms[i]*3)+3] = null;
+                    dividedData[randoms[i]*3+1] = "";
+                    dividedData[(randoms[i]*3)+2] = "";
+                    dividedData[(randoms[i]*3)+3] = "";
                 }
                 return  Stream.of(dividedData)
                         .filter(s -> s != null && !s.isEmpty())
@@ -70,15 +68,15 @@ public class DataWindow {
 
     private int[] generateRandomNumbers(int n, int max) {
         Random rnd = new Random();
-        int[] randoms = new int[n];
+        String[] randoms = new String[n];
         String num;
         for (int i = 0; i < n;) {
             num = Integer.toString(rnd.nextInt(max));
             if (Arrays.stream(randoms).noneMatch(num::equals)) {
-                randoms[i] = Integer.parseInt(num);
+                randoms[i] = num;
                 i++;
             }
         }
-        return randoms;
+        return  Arrays.asList(randoms).stream().mapToInt(Integer::parseInt).toArray();
     }
 }
