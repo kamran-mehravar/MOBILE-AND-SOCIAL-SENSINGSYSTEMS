@@ -216,10 +216,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                 public void run() {
                     window.setData(new StringBuilder(currentData[1].toString()));
                     window.setWindow_time(delay/1000);
-                    stopListeners();
                     String fixedData = window.fixDataLength();
-                    startListeners();
-                    Log.i("LINES", "" + fixedData.split(",").length);
                     writeOnFile(currentData[0].toString());
                     writeOnFile("," + fixedData + "\n");
                     double overlaplines = ((double)overlapProgress/100) * RECORDS_SEC * windowSizeBar.getProgress();
