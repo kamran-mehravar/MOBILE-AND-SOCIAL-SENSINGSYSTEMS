@@ -48,6 +48,20 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private SeekBar windowSizeBar, overlappingBar;
     private int currentVehicle = -1, currentWindow, overlapProgress;
     private StringBuilder[] currentData = new StringBuilder[2];
+
+    // accelerometer data
+    private final int MAX_TESTS_NUM = 40 * 5; // 40 samples in 5s
+    private final float[] rawAccData = new float[MAX_TESTS_NUM * 3];
+    private int rawAccDataIdx = 0;
+
+    // LPF
+    private final float[] lpfAccData = new float[MAX_TESTS_NUM * 3];
+    private final float[] lpfPrevData = new float[3];
+    private int count = 0;
+    private float beginTime = System.nanoTime();
+    private float rc = 0.002f;
+    private boolean isStarted;
+    /** private StringBuilder[] filteredData = new StringBuilder[3]; **/
     private Timer timer;
     private DataWindow window;
 
@@ -113,7 +127,38 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             float y = event.values[1];
             float z = event.values[2];
             currentData[1].append(",").append(x).append(",").append(y).append(",").append(z);
+            /** add separate arrays **/
+            System.arraycopy(event.values, 0, rawAccData, rawAccDataIdx, 3);
+            applyLPF();
+            rawAccDataIdx += 3;
+            if (rawAccDataIdx >= rawAccData.length) {
+                isStarted = true;
+                // stopMeasure();
+            }
         }
+    }
+
+    private void applyLPF() {
+        final float tm = System.nanoTime();
+        final float dt = ((tm - beginTime) / 1000000000.0f) / count;
+
+        final float alpha = rc / (rc + dt);
+
+        if (count == 0) {
+            lpfPrevData[0] = (1 - alpha) * rawAccData[rawAccDataIdx];
+            lpfPrevData[1] = (1 - alpha) * rawAccData[rawAccDataIdx + 1];
+            lpfPrevData[2] = (1 - alpha) * rawAccData[rawAccDataIdx + 2];
+        } else {
+            lpfPrevData[0] = alpha * lpfPrevData[0] + (1 - alpha) * rawAccData[rawAccDataIdx];
+            lpfPrevData[1] = alpha * lpfPrevData[1] + (1 - alpha) * rawAccData[rawAccDataIdx + 1];
+            lpfPrevData[2] = alpha * lpfPrevData[2] + (1 - alpha) * rawAccData[rawAccDataIdx + 2];
+        }
+        //if (isStarted) {
+        lpfAccData[rawAccDataIdx]     = lpfPrevData[0];
+        lpfAccData[rawAccDataIdx + 1] = lpfPrevData[1];
+        lpfAccData[rawAccDataIdx + 2] = lpfPrevData[2];
+        //}
+        ++count;
     }
 
     private void startRecording() {
@@ -209,6 +254,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         double delay;
         if (first) delay = windowSizeBar.getProgress() * 1000L;
         else delay = windowSizeBar.getProgress() * 1000L - (windowSizeBar.getProgress() * ((double)overlapProgress/100) * 1000L);
+        /** UUID = UUID.randomUUID().getMostSignificantBits();
+         * if UUID < 0
+         *      UUID = UUID*(-1);
+         * **/
         currentData[0].append(currentVehicle).append(",").append(UUID.randomUUID().getMostSignificantBits());
         try {
             timer.schedule(new TimerTask() {
@@ -216,10 +265,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                 public void run() {
                     window.setData(new StringBuilder(currentData[1].toString()));
                     window.setWindow_time(delay/1000);
-                    stopListeners();
                     String fixedData = window.fixDataLength();
-                    startListeners();
-                    Log.i("LINES", "" + fixedData.split(",").length);
                     writeOnFile(currentData[0].toString());
                     writeOnFile("," + fixedData + "\n");
                     double overlaplines = ((double)overlapProgress/100) * RECORDS_SEC * windowSizeBar.getProgress();
