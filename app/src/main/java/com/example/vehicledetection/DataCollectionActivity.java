@@ -49,22 +49,23 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private File dataFile;
     private File fixedDataFile;
     private SeekBar windowSizeBar, overlappingBar;
-    private int currentVehicle = -1, currentWindow, overlapProgress;
+    private int currentVehicle = -1, overlapProgress;
     private StringBuilder[] currentData = new StringBuilder[2];
+    private StringBuilder filteredOverlappedLines = new StringBuilder();
+    private String nextLinesRaw = "", nextLinesFiltered = "";
 
     // accelerometer data
-    private final int MAX_TESTS_NUM = 40 * 5; // 40 samples in 5s
-    private final ArrayList<Float> rawAccData = new ArrayList<Float>();
+    private final int MAX_TESTS_NUM = RECORDS_SEC * 5; // 40 samples in 5s
+    private final ArrayList<Float> rawAccData = new ArrayList<>();
     private int rawAccDataIdx = 0;
 
     // LPF
-    private ArrayList<String> lpfAccData = new ArrayList<String>();
+    private ArrayList<String> lpfAccData = new ArrayList<>();
     private final float[] lpfPrevData = new float[3];
     private int count = 0;
     private float beginTime = System.nanoTime();
     private float rc = 0.002f;
     private boolean isStarted;
-    /** private StringBuilder[] filteredData = new StringBuilder[3]; **/
     private Timer timer;
     private DataWindow window;
 
@@ -133,8 +134,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             /** add separate arrays **/
             rawAccData.addAll(Arrays.asList(event.values[0], event.values[1], event.values[2]));
             //System.arraycopy(event.values, 0, rawAccData, rawAccDataIdx, 3);
-
-
             applyLPF();
             rawAccDataIdx += 3;
             if (rawAccDataIdx >= rawAccData.size()) {
@@ -175,13 +174,13 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     private void startRecording() {
         Chronometer focus = findViewById(R.id.chronometer1);
+        initTempFiles();
         sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
         recording = true;
         this.window.setWindow_time(windowSizeBar.getProgress());
         currentData[0] = new StringBuilder();
         currentData[1] = new StringBuilder();
         startWindowTimer(true);
-        currentWindow = 1;
         focus.setBase(SystemClock.elapsedRealtime());
         focus.start();
     }
@@ -226,8 +225,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     public void initTempFiles() {
-        dataFile = new File(c.getFilesDir(), "data_collection_raw.csv");
-        fixedDataFile = new File(c.getFilesDir(), "data_collection_fixed.csv");
+        dataFile = new File(c.getFilesDir(), "data_collection_raw_" + this.overlapProgress +".csv");
+        fixedDataFile = new File(c.getFilesDir(), "data_collection_fixed_" + this.overlapProgress + ".csv");
         if (!dataFile.exists()) {
             StringBuilder init = new StringBuilder("LABEL,UUID");
             for (int i = 0; i < 200; i++) {
@@ -266,45 +265,42 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
-    public void stopListeners() {
-        sm.unregisterListener(this, sAcceleration);
-    }
-
-    public void startListeners() {
-        sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
-    }
-
     public void startWindowTimer(boolean first) {
         double delay;
         if (first) delay = windowSizeBar.getProgress() * 1000L;
         else delay = windowSizeBar.getProgress() * 1000L - (windowSizeBar.getProgress() * ((double)overlapProgress/100) * 1000L);
-        /** UUID = UUID.randomUUID().getMostSignificantBits();
-         * if UUID < 0
-         *      UUID = UUID*(-1);
-         * **/
+
         long uuid;
         do {
             uuid = UUID.randomUUID().getMostSignificantBits();
         } while(uuid < 0);
         currentData[0].append(currentVehicle).append(",").append(uuid);
+        filteredOverlappedLines.append(currentVehicle).append(",").append(uuid);
+        if (nextLinesRaw != "") {
+            currentData[0].append(",").append(nextLinesRaw);
+            // TODO change currentData[] for a var for filtered data
+            filteredOverlappedLines.append(",").append(nextLinesFiltered);
+        }
         try {
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
                     window.setData(new StringBuilder(currentData[1].toString()));
                     window.setWindow_time(delay/1000);
-                    window.setFixData(lpfAccData.toArray(new String[0]));
+                    String[] a = lpfAccData.toArray(new String[0]);
+                    window.setFixData(a);
                     String fixedData = window.fixDataLength();
-                    writeOnFile(currentData[0].toString());
-                    writeOnFile("," + fixedData + "\n");
-                    writeOnFixedFile(currentData[0].toString());
-                    writeOnFixedFile("," + Stream.of(window.getFixData()).filter(s -> s != null && !s.isEmpty()).collect(Collectors.joining(",")) + "\n");
+                    writeOnFile(currentData[0].toString() + "," + fixedData + "\n");
+                    String fixedFilteredData = Stream.of(window.getFixData()).filter(s -> s != null && !s.isEmpty()).collect(Collectors.joining(","));
+                    writeOnFixedFile(filteredOverlappedLines.toString() + "," + fixedFilteredData + "\n");
                     double overlaplines = ((double)overlapProgress/100) * RECORDS_SEC * windowSizeBar.getProgress();
-                    String nextLines = getLastLines(currentData[0].toString() + fixedData, (int)overlaplines);
+                    nextLinesRaw = getLastLines(currentData[0].toString() + fixedData, (int)overlaplines);
+                    nextLinesFiltered = getLastLines(filteredOverlappedLines.toString() + fixedFilteredData, (int)overlaplines);
                     rawAccDataIdx = 0;
                     count = 0;
                     lpfAccData = new ArrayList<>();
-                    currentData[0] = new StringBuilder(nextLines);
+                    filteredOverlappedLines = new StringBuilder();
+                    currentData[0] = new StringBuilder();
                     currentData[1] = new StringBuilder(); // Remove all data after writing for next record
                     startWindowTimer(false);
                 }
