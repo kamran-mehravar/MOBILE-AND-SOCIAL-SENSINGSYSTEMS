@@ -7,10 +7,11 @@
     tools:context=".MonitorActivity">
 
     <Button
-        android:id="@+id/button10"
+        android:id="@+id/startMonitoringButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Monitor"
+        android:onClick="onClick"
         tools:layout_editor_absoluteX="158dp"
         tools:layout_editor_absoluteY="597dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>
