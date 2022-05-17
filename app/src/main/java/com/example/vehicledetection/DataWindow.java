@@ -14,6 +14,11 @@ public class DataWindow {
     private StringBuilder data;
     private double window_time;
     private int records_sec;
+    private String[] fixData;
+
+    public String[] getFixData() { return fixData; }
+
+    public void setFixData(String[] fixData) { this.fixData = fixData; }
 
     public DataWindow(int records_sec) {
         this.setRecords_sec(records_sec);
@@ -50,11 +55,13 @@ public class DataWindow {
             lineCount = dividedData.length / 3;
             if(this.getWindow_time() * this.getRecords_sec() < lineCount) {
                 int[] randoms = generateRandomNumbers((int)(lineCount - (this.getRecords_sec() * this.getWindow_time())), lineCount);
-                Scanner sc = new Scanner(this.getData().toString());
                 for(int i = 0; i < randoms.length; i++) {
                     dividedData[randoms[i]*3+1] = "";
                     dividedData[(randoms[i]*3)+2] = "";
                     dividedData[(randoms[i]*3)+3] = "";
+                    fixData[randoms[i]*3] = "";
+                    fixData[randoms[i]*3+1] = "";
+                    fixData[randoms[i]*3+2] = "";
                 }
                 return  Stream.of(dividedData)
                         .filter(s -> s != null && !s.isEmpty())
