@@ -27,11 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
@@ -46,28 +42,22 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private SensorManager sm;
     private boolean recording = false;
     private Context c;
-    private File dataFile;
-    private File fixedDataFile;
+    private File rawDataFile, filteredDataFile;
     private SeekBar windowSizeBar, overlappingBar;
     private int currentVehicle = -1, overlapProgress;
-    private StringBuilder[] currentData = new StringBuilder[2];
-    private StringBuilder filteredOverlappedLines = new StringBuilder();
-    private String nextLinesRaw = "", nextLinesFiltered = "";
+    private StringBuilder rawData, filteredData;
+    private DataWindow window;
 
     // accelerometer data
-    private final int MAX_TESTS_NUM = RECORDS_SEC * 5; // 40 samples in 5s
-    private final ArrayList<Float> rawAccData = new ArrayList<>();
+    private final int MAX_TESTS_NUM = RECORDS_SEC * 5; // 5 seconds of window size
+    private final float[] rawAccData = new float[MAX_TESTS_NUM * 3];
     private int rawAccDataIdx = 0;
 
     // LPF
-    private ArrayList<String> lpfAccData = new ArrayList<>();
     private final float[] lpfPrevData = new float[3];
     private int count = 0;
-    private float beginTime = System.nanoTime();
-    private float rc = 0.002f;
-    private boolean isStarted;
-    private Timer timer;
-    private DataWindow window;
+    private final float beginTime = System.nanoTime();
+    private final float rc = 0.002f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,18 +65,19 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         setContentView(R.layout.activity_data_collection);
         setSensors();
         c = this.getBaseContext();
-        initTempFiles();
         initListeners();
         removeButtonBorder();
-        timer = new Timer();
         window = new DataWindow(RECORDS_SEC);
     }
 
     @Override
     public void onClick(View v) {
-        if(v.getId() == R.id.recordButton) {
-            if (!recording) { startRecording(); }
-            else { stopRecording(); }
+        if (v.getId() == R.id.recordButton) {
+            if (!recording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
         } else if (v.getId() == R.id.busButton) {
             removeButtonBorder();
             Button b = v.findViewById(R.id.busButton);
@@ -126,76 +117,62 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if(event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
+        if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
             float x = event.values[0];
             float y = event.values[1];
             float z = event.values[2];
-            currentData[1].append(",").append(x).append(",").append(y).append(",").append(z);
-            /** add separate arrays **/
-            rawAccData.addAll(Arrays.asList(event.values[0], event.values[1], event.values[2]));
-            //System.arraycopy(event.values, 0, rawAccData, rawAccDataIdx, 3);
+            rawData.append(",").append(x).append(",").append(y).append(",").append(z);
+            System.arraycopy(event.values, 0, rawAccData, rawAccDataIdx, 3);
             applyLPF();
-            rawAccDataIdx += 3;
-            if (rawAccDataIdx >= rawAccData.size()) {
-                isStarted = true;
-                // stopMeasure();
+            filteredData.append(",").append(lpfPrevData[0]).append(",").append(lpfPrevData[1]).append(",").append(lpfPrevData[2]);
+            if (count == RECORDS_SEC * windowSizeBar.getProgress()) {
+                startNewWindow();
             }
-
         }
     }
 
     private void applyLPF() {
-        try {
-            final float tm = System.nanoTime();
-            final float dt = ((tm - beginTime) / 1000000000.0f) / count;
+        final float tm = System.nanoTime();
+        final float dt = ((tm - beginTime) / 1000000000.0f) / count;
 
-            final float alpha = rc / (rc + dt);
+        final float alpha = rc / (rc + dt);
 
-            if (count == 0) {
-                lpfPrevData[0] = (1 - alpha) * rawAccData.get(rawAccDataIdx);
-                lpfPrevData[1] = (1 - alpha) * rawAccData.get(rawAccDataIdx + 1);
-                lpfPrevData[2] = (1 - alpha) * rawAccData.get(rawAccDataIdx + 2);
-            } else {
-                lpfPrevData[0] = alpha * lpfPrevData[0] + (1 - alpha) * rawAccData.get(rawAccDataIdx);
-                lpfPrevData[1] = alpha * lpfPrevData[1] + (1 - alpha) * rawAccData.get(rawAccDataIdx + 1);
-                lpfPrevData[2] = alpha * lpfPrevData[2] + (1 - alpha) * rawAccData.get(rawAccDataIdx + 2);
-            }
-            //if (isStarted) {
-            lpfAccData.add(Float.toString(lpfPrevData[0]));
-            lpfAccData.add(Float.toString(lpfPrevData[1]));
-            lpfAccData.add(Float.toString(lpfPrevData[2]));
-            //}
-            ++count;
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.i("ERROR", e.toString());
+        if (count == 0) {
+            lpfPrevData[0] = (1 - alpha) * rawAccData[0];
+            lpfPrevData[1] = (1 - alpha) * rawAccData[1];
+            lpfPrevData[2] = (1 - alpha) * rawAccData[2];
+        } else {
+            lpfPrevData[0] = alpha * lpfPrevData[0] + (1 - alpha) * rawAccData[count * 3];
+            lpfPrevData[1] = alpha * lpfPrevData[1] + (1 - alpha) * rawAccData[(count * 3) + 1];
+            lpfPrevData[2] = alpha * lpfPrevData[2] + (1 - alpha) * rawAccData[(count * 3) + 2];
         }
+        ++count;
     }
 
     private void startRecording() {
-        Chronometer focus = findViewById(R.id.chronometer1);
+        Chronometer timeRecorded = findViewById(R.id.chronometer1);
         initTempFiles();
         sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
         recording = true;
         this.window.setWindow_time(windowSizeBar.getProgress());
-        currentData[0] = new StringBuilder();
-        currentData[1] = new StringBuilder();
-        startWindowTimer(true);
-        focus.setBase(SystemClock.elapsedRealtime());
-        focus.start();
+        filteredData = new StringBuilder();
+        rawData = new StringBuilder();
+        startNewWindow();
+        timeRecorded.setBase(SystemClock.elapsedRealtime());
+        timeRecorded.start();
     }
 
     private void stopRecording() {
         Chronometer focus = findViewById(R.id.chronometer1);
         sm.unregisterListener(this, sAcceleration);
         recording = false;
-        timer.cancel();
         focus.setBase(SystemClock.elapsedRealtime());
         focus.stop();
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int i) { }
+    public void onAccuracyChanged(Sensor sensor, int i) {
+    }
 
     public void setSensors() {
         sm = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -224,20 +201,22 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         b.setEnabled(true);
     }
 
+    // TODO se le puede pasar el archivo por param y comprobar que ese archivo existe
     public void initTempFiles() {
-        dataFile = new File(c.getFilesDir(), "data_collection_raw_" + this.overlapProgress +".csv");
-        fixedDataFile = new File(c.getFilesDir(), "data_collection_fixed_" + this.overlapProgress + ".csv");
-        if (!dataFile.exists()) {
+        rawDataFile = new File(c.getFilesDir(), "data_collection_raw_" + this.overlapProgress + ".csv");
+        filteredDataFile = new File(c.getFilesDir(), "data_collection_filtered_" + this.overlapProgress + ".csv");
+        // TODO also check other files
+        if (!rawDataFile.exists()) {
             StringBuilder init = new StringBuilder("LABEL,UUID");
             for (int i = 0; i < 200; i++) {
                 init.append(",accx").append(i).append(",accy").append(i).append(",accz").append(i);
             }
             try {
-                FileWriter fw = new FileWriter(dataFile, true);
-                fw.write(init + "\n");
+                FileWriter fw = new FileWriter(rawDataFile, true);
+                fw.write(init.toString());
                 fw.close();
-                fw = new FileWriter(fixedDataFile, true);
-                fw.write(init + "\n");
+                fw = new FileWriter(filteredDataFile, true);
+                fw.write(init.toString());
                 fw.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -245,9 +224,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
-    public void writeOnFile(String data) {
+    public void writeOnFile(String data, File file) {
         try {
-            FileWriter fw = new FileWriter(dataFile, true);
+            FileWriter fw = new FileWriter(file, true);
             fw.write(data);
             fw.close();
         } catch (IOException e) {
@@ -255,65 +234,35 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
-    public void writeOnFixedFile(String data) {
-        try {
-            FileWriter fw = new FileWriter(fixedDataFile, true);
-            fw.write(data);
-            fw.close();
-        } catch (IOException e) {
-            Log.i("ERROR", e.toString());
+    public void startNewWindow() {
+        writeOnFile(rawData.toString() + "\n", rawDataFile);
+        writeOnFile(filteredData.toString() + "\n", filteredDataFile);
+        double numOverlappedLines = ((double) overlapProgress / 100) * RECORDS_SEC * windowSizeBar.getProgress();
+        String overlappedLinesRaw = "";
+        String overlappedLinesFiltered = "";
+        if (numOverlappedLines > 0) {
+            overlappedLinesRaw = "," + getOverlappedRecords(rawData.toString(), (int) numOverlappedLines);
+            overlappedLinesFiltered = "," + getOverlappedRecords(filteredData.toString(), (int) numOverlappedLines);
         }
+        rawAccDataIdx = 0;
+        count = 0;
+        long uuid = computeUUID();
+        rawData = new StringBuilder(this.currentVehicle + "," + uuid + overlappedLinesRaw);
+        filteredData = new StringBuilder(this.currentVehicle + "," + uuid + overlappedLinesFiltered);
     }
 
-    public void startWindowTimer(boolean first) {
-        double delay;
-        if (first) delay = windowSizeBar.getProgress() * 1000L;
-        else delay = windowSizeBar.getProgress() * 1000L - (windowSizeBar.getProgress() * ((double)overlapProgress/100) * 1000L);
-
+    private long computeUUID() {
         long uuid;
         do {
             uuid = UUID.randomUUID().getMostSignificantBits();
-        } while(uuid < 0);
-        currentData[0].append(currentVehicle).append(",").append(uuid);
-        filteredOverlappedLines.append(currentVehicle).append(",").append(uuid);
-        if (nextLinesRaw != "") {
-            currentData[0].append(",").append(nextLinesRaw);
-            // TODO change currentData[] for a var for filtered data
-            filteredOverlappedLines.append(",").append(nextLinesFiltered);
-        }
-        try {
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    window.setData(new StringBuilder(currentData[1].toString()));
-                    window.setWindow_time(delay/1000);
-                    String[] a = lpfAccData.toArray(new String[0]);
-                    window.setFixData(a);
-                    String fixedData = window.fixDataLength();
-                    writeOnFile(currentData[0].toString() + "," + fixedData + "\n");
-                    String fixedFilteredData = Stream.of(window.getFixData()).filter(s -> s != null && !s.isEmpty()).collect(Collectors.joining(","));
-                    writeOnFixedFile(filteredOverlappedLines.toString() + "," + fixedFilteredData + "\n");
-                    double overlaplines = ((double)overlapProgress/100) * RECORDS_SEC * windowSizeBar.getProgress();
-                    nextLinesRaw = getLastLines(currentData[0].toString() + fixedData, (int)overlaplines);
-                    nextLinesFiltered = getLastLines(filteredOverlappedLines.toString() + fixedFilteredData, (int)overlaplines);
-                    rawAccDataIdx = 0;
-                    count = 0;
-                    lpfAccData = new ArrayList<>();
-                    filteredOverlappedLines = new StringBuilder();
-                    currentData[0] = new StringBuilder();
-                    currentData[1] = new StringBuilder(); // Remove all data after writing for next record
-                    startWindowTimer(false);
-                }
-            }, (long) delay);
-        } catch (Exception e) {
-            Log.i("ERROR", e.toString());
-        }
+        } while (uuid < 0);
+        return uuid;
     }
 
-    private String getLastLines(String string, int numLines) {
+    private String getOverlappedRecords(String data, int linesOverlapped) {
         try {
-            List<String> lines = Arrays.asList(string.split(","));
-            ArrayList<String> tempArray = new ArrayList<>(lines.subList(Math.max(0, lines.size() - (numLines * 3)), lines.size()));
+            List<String> lines = Arrays.asList(data.split(","));
+            ArrayList<String> tempArray = new ArrayList<>(lines.subList(Math.max(0, lines.size() - (linesOverlapped * 3)), lines.size()));
             return String.join(",", tempArray);
         } catch (Exception e) {
             Log.i("ERROR", e.toString());
@@ -329,7 +278,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             t.setText("Window Size    =   " + windowSizeBar.getProgress());
         } else if (seekBar.getId() == R.id.overlappingBar) {
             manageBarProgress(progress);
-            ((TextView)findViewById(R.id.overlappingText)).setText("Overlapping    =   " + overlapProgress);
+            ((TextView) findViewById(R.id.overlappingText)).setText("Overlapping    =   " + overlapProgress);
         } else {
             throw new NoSuchElementException();
         }
@@ -342,11 +291,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-
     }
 }
