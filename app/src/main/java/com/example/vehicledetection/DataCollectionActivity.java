@@ -31,7 +31,7 @@ import java.util.UUID;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
-    private static final int RECORDS_SEC = 40;
+    private static final int RECORDS_SEC = 50;
     private static final int BUS = 0;
     private static final int CAR = 1;
     private static final int MOTO = 2;
@@ -207,7 +207,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         // TODO also check other files
         if (!rawDataFile.exists()) {
             StringBuilder init = new StringBuilder("LABEL,UUID");
-            for (int i = 0; i < 200; i++) {
+            // for (int i = 0; i < 200; i++) {
+            for (int i = 0; i < RECORDS_SEC * windowSizeBar.getProgress(); i++) {
                 init.append(",accx").append(i).append(",accy").append(i).append(",accz").append(i);
             }
             try {

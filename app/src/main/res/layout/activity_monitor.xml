@@ -14,4 +14,14 @@
         android:onClick="onClick"
         tools:layout_editor_absoluteX="158dp"
         tools:layout_editor_absoluteY="597dp" />
+
+    <Chronometer
+        android:id="@+id/monitoringChronometer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="180dp"
+        android:text="Chronometer"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:layout_editor_absoluteY="58dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
