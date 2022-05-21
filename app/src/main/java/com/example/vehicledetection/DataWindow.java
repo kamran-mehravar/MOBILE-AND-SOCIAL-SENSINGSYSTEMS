@@ -48,42 +48,4 @@ public class DataWindow {
         this.records_sec = records_sec;
     }
 
-    public String fixDataLength() {
-        int lineCount;
-        try {
-            String[] dividedData = this.getData().toString().split(",");
-            lineCount = dividedData.length / 3;
-            if(this.getWindow_time() * this.getRecords_sec() < lineCount) {
-                int[] randoms = generateRandomNumbers((int)(lineCount - (this.getRecords_sec() * this.getWindow_time())), lineCount);
-                for(int i = 0; i < randoms.length; i++) {
-                    dividedData[randoms[i]*3+1] = "";
-                    dividedData[(randoms[i]*3)+2] = "";
-                    dividedData[(randoms[i]*3)+3] = "";
-                    fixData[randoms[i]*3] = "";
-                    fixData[randoms[i]*3+1] = "";
-                    fixData[randoms[i]*3+2] = "";
-                }
-                return  Stream.of(dividedData)
-                        .filter(s -> s != null && !s.isEmpty())
-                        .collect(Collectors.joining(","));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return data.toString();
-    }
-
-    private int[] generateRandomNumbers(int n, int max) {
-        Random rnd = new Random();
-        String[] randoms = new String[n];
-        String num;
-        for (int i = 0; i < n;) {
-            num = Integer.toString(rnd.nextInt(max));
-            if (Arrays.stream(randoms).noneMatch(num::equals)) {
-                randoms[i] = num;
-                i++;
-            }
-        }
-        return  Arrays.asList(randoms).stream().mapToInt(Integer::parseInt).toArray();
-    }
 }
