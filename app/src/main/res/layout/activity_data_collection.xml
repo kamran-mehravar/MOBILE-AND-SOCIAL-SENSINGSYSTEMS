@@ -4,148 +4,153 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_weight="1"
     android:background="#FFFFFF"
     android:backgroundTint="#FFFFFF"
     tools:context=".DataCollectionActivity">
 
-    <Button
-        android:id="@+id/carButton"
-        android:layout_width="wrap_content"
-        android:layout_height="48dp"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="80dp"
-        android:width="115dp"
-        android:onClick="onClick"
-        android:text="Car"
-        android:textSize="12sp"
-        app:layout_constraintStart_toEndOf="@+id/busButton"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/busButton"
-        android:layout_width="123dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="80dp"
-        android:width="115dp"
-        android:onClick="onClick"
-        android:text="Bus"
-        android:textSize="12sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/walkButton"
-        android:layout_width="123dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="84dp"
-        android:layout_marginTop="16dp"
-        android:width="115dp"
-        android:onClick="onClick"
-        android:text="Walk"
-        android:textSize="12sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/busButton" />
-
-    <Button
-        android:id="@+id/trainButton"
-        android:layout_width="123dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="16dp"
-        android:width="115dp"
-        android:onClick="onClick"
-        android:text="Train"
-        android:textSize="12sp"
-        app:layout_constraintStart_toEndOf="@+id/walkButton"
-        app:layout_constraintTop_toBottomOf="@+id/carButton" />
-
-    <Button
-        android:id="@+id/motoButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="80dp"
-        android:width="115dp"
-        android:height="25dp"
-        android:onClick="onClick"
-        android:text="Motorbike"
-        android:textSize="12sp"
-        app:layout_constraintStart_toEndOf="@+id/carButton"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <SeekBar
-        android:id="@+id/windowSizeBar"
-        android:layout_width="224dp"
-        android:layout_height="33dp"
-        android:layout_marginStart="92dp"
-        android:layout_marginTop="36dp"
-        android:max="60"
-        android:progress="1"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/windowSizeText" />
-
-    <TextView
-        android:id="@+id/windowSizeText"
-        android:layout_width="139dp"
-        android:layout_height="20dp"
-        android:layout_marginStart="144dp"
-        android:layout_marginTop="48dp"
-        android:text="Window Size    =   0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/walkButton" />
-
-    <Button
-        android:id="@+id/recordButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="92dp"
-        android:layout_marginTop="32dp"
-        android:onClick="onClick"
-        android:text="Record"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/overlappingBar" />
-
-    <TextView
-        android:id="@+id/overlappingText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="144dp"
-        android:layout_marginTop="36dp"
-        android:text="Overlapping    =    0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/windowSizeBar" />
-
-    <SeekBar
-        android:id="@+id/overlappingBar"
-        android:layout_width="211dp"
-        android:layout_height="21dp"
-        android:layout_marginStart="104dp"
-        android:layout_marginTop="44dp"
-        android:max="75"
-        android:progress="0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/overlappingText" />
-
-    <Button
-        android:id="@+id/removeFiles"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="52dp"
-        android:layout_marginTop="28dp"
-        android:onClick="onClick"
-        android:text="Remove"
-        app:layout_constraintStart_toEndOf="@+id/recordButton"
-        app:layout_constraintTop_toBottomOf="@+id/overlappingBar" />
 
     <Chronometer
         android:id="@+id/chronometer1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="184dp"
-        android:layout_marginTop="28dp"
+        android:layout_marginTop="60dp"
         android:text="Chronometer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/removeFiles" />
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout3"
+        tools:layout_editor_absoluteX="182dp" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="36dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
+        tools:layout_editor_absoluteX="0dp">
+
+        <Button
+            android:id="@+id/removeFiles"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
+            android:onClick="onClick"
+            android:text="Remove" />
+
+        <Button
+            android:id="@+id/recordButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:onClick="onClick"
+            android:text="Record" />
+    </LinearLayout>
+
+    <TableLayout
+        android:id="@+id/tableLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="92dp"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteX="-3dp">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:dividerPadding="5dp"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/carButton"
+                android:layout_marginLeft="15dp"
+                android:layout_marginRight="10dp"
+                android:width="115dp"
+                android:onClick="onClick"
+                android:text="Car"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/busButton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:width="115dp"
+                android:onClick="onClick"
+                android:text="Bus"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/motoButton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="15dp"
+                android:width="115dp"
+                android:onClick="onClick"
+                android:text="Moto"
+                android:textSize="12sp" />
+
+        </TableRow>
+
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:paddingTop="5dp">
+
+
+            <Button
+                android:id="@+id/walkButton"
+                android:layout_marginLeft="15dp"
+                android:layout_marginRight="7dp"
+                android:width="115dp"
+                android:onClick="onClick"
+                android:text="Walk"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/trainButton"
+                android:layout_marginLeft="7dp"
+                android:layout_marginRight="15dp"
+                android:width="115dp"
+                android:onClick="onClick"
+                android:text="Train"
+                android:textSize="12sp" />
+        </TableRow>
+
+    </TableLayout>
+
+    <TextView
+        android:id="@+id/infoMessageTV"
+        android:layout_width="221dp"
+        android:layout_height="71dp"
+        android:layout_marginTop="44dp"
+        android:gravity="center"
+        android:textAlignment="center"
+        app:layout_constraintTop_toBottomOf="@+id/chronometer1"
+        tools:layout_editor_absoluteX="95dp" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="81dp"
+        android:layout_marginTop="52dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintTop_toBottomOf="@+id/tableLayout"
+        tools:layout_editor_absoluteX="0dp">
+
+        <TextView
+            android:id="@+id/overlappingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Overlap    =    0" />
+
+        <SeekBar
+            android:id="@+id/overlappingBar"
+            android:layout_width="211dp"
+            android:layout_height="21dp"
+            android:layout_marginTop="25dp"
+            android:max="75"
+            android:progress="0" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
