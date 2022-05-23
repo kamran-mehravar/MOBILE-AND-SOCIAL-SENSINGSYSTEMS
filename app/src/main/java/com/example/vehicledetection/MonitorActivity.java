@@ -138,7 +138,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
 
         if (monitoringCounter == MONITORING_REPETITIONS){
             stopMonitoring();
-            returnInference();
+            returnInference(inferenceTempFile.getAbsolutePath());
         }
     }
 
@@ -171,6 +171,11 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         timeRecorded.setBase(SystemClock.elapsedRealtime());
         timeRecorded.start();
         count=0;
+        busValue = 0;
+        carValue = 0;
+        motoValue = 0;
+        walkValue = 0;
+        trainValue = 0;
     }
 
     private void stopMonitoring() {
@@ -179,6 +184,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         monitoringStatus = false;
         focus.setBase(SystemClock.elapsedRealtime());
         focus.stop();
+        inferenceTempFile.delete();
     }
 
     @Override
@@ -220,86 +226,43 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         }
     }
 
-    private void returnInference() { /**
-     // Building a model evaluator from a PMML file
-     Evaluator evaluator = new LoadingModelEvaluatorBuilder()
-     .load(new File("model.pmml"))
-     .build();
-
-     // Perforing the self-check
-     evaluator.verify();
-
-     // Printing input (x1, x2, .., xn) fields
-     List<InputField> inputFields = evaluator.getInputFields();
-     System.out.println("Input fields: " + inputFields);
-
-     // Printing primary result (y) field(s)
-     List<TargetField> targetFields = evaluator.getTargetFields();
-     System.out.println("Target field(s): " + targetFields);
-
-     // Printing secondary result (eg. probability(y), decision(y)) fields
-     List<OutputField> outputFields = evaluator.getOutputFields();
-     System.out.println("Output fields: " + outputFields);
-     **/
-        // Iterating through columnar data (eg. a CSV file, an SQL result set)
-        //while(true){
-        // Reading a record from the data source
-
-        Map<String, ?> arguments = retrieveInferenceDataFromFile(inferenceTempFile.getAbsolutePath(), false);
-        //   if(arguments == null){
-        //       break;
-        //       }
-        //}
-
-        /**
-         // Evaluating the model
-         Map<String, ?> results = evaluator.evaluate(arguments);
-
-         // Decoupling results from the JPMML-Evaluator runtime environment
-         results = EvaluatorUtil.decodeAll(results);
-
-         // Writing a record to the data sink
-         writeRecord(results);
-         }
-
-         // Making the model evaluator eligible for garbage collection
-         evaluator = null;
-         **/
-    }
-
-    public static Map<String, String> retrieveInferenceDataFromFile(String filePath, boolean dupKeyOption) {
-        HashMap<String, String> map = new HashMap<>();
+    private void returnInference(String dataFilePath) {
+        int result = 10; // not recognizable value
+        /** Read arguments from File and execute the model **/
+        HashMap<String, String> arguments = new HashMap<>(); // create a map for the argument values (accx0:0,1 , accy0:0,05 ...)
         String line;
-        Log.i("path in map", filePath);
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            while ((line = reader.readLine()) != null) {
-                String[] keyValuePair = line.split(":", 2);// TODO fix map of arguments for ML inference
-                if (keyValuePair.length > 1) {
-                    String key = keyValuePair[0];
-                    Log.i("key: ", key);
-                    String value = keyValuePair[1];
-                    Log.i("value: ", value);
-                    map.put(key, value);
-                    //if (dupKeyOption) {
-                    //    map.put(key, value);
-                    // } else {
-                    //    map.putIfAbsent(key, value);
-                    //}
-                } else {
-                    Log.i("no key:value: ","line"+line);
-                    // System.out.println("No Key:Value found in line, ignoring: " + line); // debug
+        try (BufferedReader reader = new BufferedReader(new FileReader(dataFilePath))) {
+            line = reader.readLine();
+            String[] keys = line.split(",", SAMPLE_SIZE*3);
+            Log.i("keys: ", line + "\n");
+            for (int n=0 ; n<MONITORING_REPETITIONS; n++) { // iterate over number of monitoring windows captured (equal to the number of lines)
+                if ((line = reader.readLine()) != null) {
+                    String[] values = line.split(",", SAMPLE_SIZE*3);
+                    /** Write sample data in the map **/
+                    if (values.length > 1 && keys.length > 1){
+                        for (int i=0; i<SAMPLE_SIZE*3; i++){
+                            Log.i("key: ", keys[i]);
+                            Log.i("value: ", values[i]);
+                            arguments.put(keys[i], values[i]);
+                        }
+                        /** get Inference value from the model **/
+                        result = 2;
+                        arguments.clear();
+                        if (result == 0){ busValue++; }
+                        else if (result == 1){ carValue++; }
+                        else if (result == 2){ motoValue++; }
+                        else if (result == 3){ walkValue++; }
+                        else if (result == 4){ trainValue++; }
+                        else {Log.i("error: ", "model result not listed\n");}
+                    }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
             Log.d("Fail to Read file in inference map", "");
         }
-        //File temp = new File(filePath);
-        //temp.delete(); // delete temporary File
-        Log.d("MAP OF SAMPLE", map.toString() );
-        return map;
-
     }
+
 
     private void initPlot() {
         plot = (XYPlot) findViewById(R.id.plot);
