@@ -6,36 +6,45 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/dataCollectionButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="96dp"
-        android:layout_marginTop="100dp"
-        android:onClick="onClick"
-        android:text="Data Collection"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        tools:layout_editor_absoluteX="1dp"
+        tools:layout_editor_absoluteY="91dp">
 
-    <Button
-        android:id="@+id/machineLearningButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="96dp"
-        android:layout_marginTop="168dp"
-        android:onClick="onClick"
-        android:text="Machine Learning"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/dataCollectionButton" />
+        <Button
+            android:id="@+id/dataCollectionButton"
+            android:layout_width="300dp"
+            android:layout_height="150dp"
+            android:layout_marginBottom="50dp"
+            android:fontFamily="sans-serif-light"
+            android:onClick="onClick"
+            android:text="Data Collect"
+            android:textSize="30sp"
+            android:textStyle="bold" />
 
-    <Button
-        android:id="@+id/monitorButton"
-        android:layout_width="190dp"
-        android:layout_height="50dp"
-        android:layout_marginStart="108dp"
-        android:layout_marginTop="140dp"
-        android:onClick="onClick"
-        android:text="Monitor"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/machineLearningButton" />
+        <Button
+            android:id="@+id/machineLearningButton"
+            android:layout_width="300dp"
+            android:layout_height="150dp"
+            android:layout_marginBottom="50dp"
+            android:fontFamily="sans-serif-light"
+            android:onClick="onClick"
+            android:text="Machine Learning"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/monitorButton"
+            android:layout_width="300dp"
+            android:layout_height="150dp"
+            android:fontFamily="sans-serif-light"
+            android:onClick="onClick"
+            android:text="Monitor"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
