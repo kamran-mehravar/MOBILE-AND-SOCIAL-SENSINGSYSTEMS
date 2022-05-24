@@ -1,6 +1,7 @@
 package com.example.vehicledetection;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -25,8 +26,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
@@ -43,7 +45,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private boolean recording = false;
     private Context c;
     private File rawDataFile, filteredDataFile;
-    private SeekBar windowSizeBar, overlappingBar;
+    private SeekBar overlappingBar;
     private int currentVehicle = -1, overlapProgress;
     private StringBuilder rawData, filteredData;
     private DataWindow window;
@@ -51,13 +53,12 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     // accelerometer data
     private final int MAX_TESTS_NUM = RECORDS_SEC * 5; // 5 seconds of window size
     private final float[] rawAccData = new float[MAX_TESTS_NUM * 3];
-    private int rawAccDataIdx = 0;
 
     // LPF
     private final float[] lpfPrevData = new float[3];
     private int count = 0;
     private final float beginTime = System.nanoTime();
-    private final float rc = 0.002f;
+    private final static float rc = 0.002f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,47 +73,66 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.recordButton) {
-            if (!recording) {
-                startRecording();
-            } else {
+        if (recording) {
+            if (v.getId() == R.id.recordButton) {
                 stopRecording();
-            }
-        } else if (v.getId() == R.id.busButton) {
-            removeButtonBorder();
-            Button b = v.findViewById(R.id.busButton);
-            b.setEnabled(false);
-            currentVehicle = this.BUS;
-        } else if (v.getId() == R.id.carButton) {
-            removeButtonBorder();
-            Button b = v.findViewById(R.id.carButton);
-            b.setEnabled(false);
-            currentVehicle = this.CAR;
-        } else if (v.getId() == R.id.walkButton) {
-            removeButtonBorder();
-            Button b = v.findViewById(R.id.walkButton);
-            b.setEnabled(false);
-            currentVehicle = this.WALK;
-        } else if (v.getId() == R.id.trainButton) {
-            removeButtonBorder();
-            Button b = v.findViewById(R.id.trainButton);
-            b.setEnabled(false);
-            currentVehicle = this.TRAIN;
-        } else if (v.getId() == R.id.motoButton) {
-            removeButtonBorder();
-            Button b = v.findViewById(R.id.motoButton);
-            b.setEnabled(false);
-            currentVehicle = this.MOTO;
-        } else if (v.getId() == R.id.removeFiles) {
-            File directory = new File(c.getFilesDir().getPath());
-            for (File file : Objects.requireNonNull(directory.listFiles())) {
-                if (!file.isDirectory()) {
-                    file.delete();
-                }
+                overlappingBar.setEnabled(true);
+                announceEvent("Data files save on successful");
             }
         } else {
-            throw new NoSuchElementException();
+            if (v.getId() == R.id.recordButton) {
+                overlappingBar.setEnabled(false);
+                startRecording();
+            } else if (v.getId() == R.id.busButton) {
+                removeButtonBorder();
+                Button b = v.findViewById(R.id.busButton);
+                b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
+                currentVehicle = BUS;
+            } else if (v.getId() == R.id.carButton) {
+                removeButtonBorder();
+                Button b = v.findViewById(R.id.carButton);
+                b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
+                currentVehicle = CAR;
+            } else if (v.getId() == R.id.walkButton) {
+                removeButtonBorder();
+                Button b = v.findViewById(R.id.walkButton);
+                b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
+                currentVehicle = WALK;
+            } else if (v.getId() == R.id.trainButton) {
+                removeButtonBorder();
+                Button b = v.findViewById(R.id.trainButton);
+                b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
+                currentVehicle = TRAIN;
+            } else if (v.getId() == R.id.motoButton) {
+                removeButtonBorder();
+                Button b = v.findViewById(R.id.motoButton);
+                b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
+                currentVehicle = MOTO;
+            } else if (v.getId() == R.id.removeFiles) {
+                File directory = new File(c.getFilesDir().getPath());
+                for (File file : Objects.requireNonNull(directory.listFiles())) {
+                    if (!file.isDirectory()) {
+                        if (file.delete()) {
+                            announceEvent("Data files remove it on successful.");
+                        } else {
+                            announceEvent("Data files cannot been remove it.");
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    private void announceEvent(String data) {
+        TextView tv = findViewById(R.id.infoMessageTV);
+        tv.setText(data);
+        Timer t = new Timer();
+        t.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                tv.setText("");
+            }
+        }, 5000);
     }
 
     @Override
@@ -122,10 +142,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             float y = event.values[1];
             float z = event.values[2];
             rawData.append(",").append(x).append(",").append(y).append(",").append(z);
-            System.arraycopy(event.values, 0, rawAccData, rawAccDataIdx, 3);
+            System.arraycopy(event.values, 0, rawAccData, 0, 3);
             applyLPF();
             filteredData.append(",").append(lpfPrevData[0]).append(",").append(lpfPrevData[1]).append(",").append(lpfPrevData[2]);
-            if (count == RECORDS_SEC * windowSizeBar.getProgress()) {
+            if (count == this.MAX_TESTS_NUM) {
                 startNewWindow();
             }
         }
@@ -154,7 +174,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         initTempFiles();
         sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
         recording = true;
-        this.window.setWindow_time(windowSizeBar.getProgress());
         filteredData = new StringBuilder();
         rawData = new StringBuilder();
         startNewWindow();
@@ -181,24 +200,21 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     @SuppressLint("NewApi")
     public void initListeners() {
-        windowSizeBar = findViewById(R.id.windowSizeBar);
-        windowSizeBar.setOnSeekBarChangeListener(this);
-        windowSizeBar.setMin(1);
         overlappingBar = findViewById(R.id.overlappingBar);
         overlappingBar.setOnSeekBarChangeListener(this);
     }
 
     public void removeButtonBorder() {
         Button b = findViewById(R.id.motoButton);
-        b.setEnabled(true);
+        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
         b = findViewById(R.id.busButton);
-        b.setEnabled(true);
+        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
         b = findViewById(R.id.carButton);
-        b.setEnabled(true);
+        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
         b = findViewById(R.id.walkButton);
-        b.setEnabled(true);
+        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
         b = findViewById(R.id.trainButton);
-        b.setEnabled(true);
+        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
     }
     
     public void initTempFiles() {
@@ -208,7 +224,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         if (!rawDataFile.exists()) {
             StringBuilder init = new StringBuilder("LABEL,UUID");
             // for (int i = 0; i < 200; i++) {
-            for (int i = 0; i < RECORDS_SEC * windowSizeBar.getProgress(); i++) {
+            for (int i = 0; i < this.MAX_TESTS_NUM; i++) {
                 init.append(",accx").append(i).append(",accy").append(i).append(",accz").append(i);
             }
             try {
@@ -237,14 +253,13 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     public void startNewWindow() {
         writeOnFile(rawData.toString() + "\n", rawDataFile);
         writeOnFile(filteredData.toString() + "\n", filteredDataFile);
-        double numOverlappedLines = ((double) overlapProgress / 100) * RECORDS_SEC * windowSizeBar.getProgress();
+        double numOverlappedLines = ((double) overlapProgress / 100) * this.MAX_TESTS_NUM;
         String overlappedLinesRaw = "";
         String overlappedLinesFiltered = "";
         if (numOverlappedLines > 0) {
             overlappedLinesRaw = "," + getOverlappedRecords(rawData.toString(), (int) numOverlappedLines);
             overlappedLinesFiltered = "," + getOverlappedRecords(filteredData.toString(), (int) numOverlappedLines);
         }
-        rawAccDataIdx = 0;
         count = 0;
         long uuid = computeUUID();
         rawData = new StringBuilder(this.currentVehicle + "," + uuid + overlappedLinesRaw);
@@ -259,6 +274,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         return uuid;
     }
 
+    @SuppressLint("NewApi")
     private String getOverlappedRecords(String data, int linesOverlapped) {
         try {
             List<String> lines = Arrays.asList(data.split(","));
@@ -273,14 +289,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     // SEEK BAR EVENT HANDLERS
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
-        if (seekBar.getId() == R.id.windowSizeBar) {
-            TextView t = findViewById(R.id.windowSizeText);
-            t.setText("Window Size    =   " + windowSizeBar.getProgress());
-        } else if (seekBar.getId() == R.id.overlappingBar) {
+        if (seekBar.getId() == R.id.overlappingBar) {
             manageBarProgress(progress);
-            ((TextView) findViewById(R.id.overlappingText)).setText("Overlapping    =   " + overlapProgress);
-        } else {
-            throw new NoSuchElementException();
+            ((TextView) findViewById(R.id.overlappingText)).setText("Overlap    =   " + overlapProgress);
         }
     }
 

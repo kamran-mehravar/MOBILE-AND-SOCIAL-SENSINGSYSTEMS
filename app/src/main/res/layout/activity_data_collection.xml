@@ -12,10 +12,11 @@
 
     <Chronometer
         android:id="@+id/chronometer1"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="60dp"
         android:text="Chronometer"
+        android:gravity="center_horizontal"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout3"
         tools:layout_editor_absoluteX="182dp" />
 
@@ -29,7 +30,7 @@
         app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
         tools:layout_editor_absoluteX="0dp">
 
-        <Button
+         <Button
             android:id="@+id/removeFiles"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -122,11 +123,12 @@
         android:id="@+id/infoMessageTV"
         android:layout_width="221dp"
         android:layout_height="71dp"
-        android:layout_marginTop="44dp"
-        android:gravity="center"
+        android:layout_marginStart="92dp"
+        android:layout_marginTop="36dp"
+        android:gravity="center_horizontal"
         android:textAlignment="center"
-        app:layout_constraintTop_toBottomOf="@+id/chronometer1"
-        tools:layout_editor_absoluteX="95dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/chronometer1" />
 
     <LinearLayout
         android:id="@+id/linearLayout2"
