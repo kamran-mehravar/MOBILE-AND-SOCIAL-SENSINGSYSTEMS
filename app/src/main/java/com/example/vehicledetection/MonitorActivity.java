@@ -2,7 +2,6 @@ package com.example.vehicledetection;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -17,11 +16,9 @@ import android.hardware.SensorManager;
 import android.os.SystemClock;
 import android.util.Log;
 import android.widget.Chronometer;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.content.res.AssetManager;
 
-import com.androidplot.util.PixelUtils;
-import com.androidplot.util.ValPixConverter;
 import com.androidplot.xy.BarFormatter;
 import com.androidplot.xy.BarRenderer;
 import com.androidplot.xy.BoundaryMode;
@@ -35,24 +32,38 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import java.io.IOException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import org.jpmml.evaluator.Evaluator;
+import org.jpmml.evaluator.EvaluatorBuilder;
+import org.jpmml.evaluator.EvaluatorUtil;
+import org.jpmml.evaluator.LoadingModelEvaluatorBuilder;
+import org.jpmml.evaluator.InputField;
+import org.jpmml.evaluator.TargetField;
+import org.jpmml.evaluator.ModelEvaluatorBuilder;
+import org.dmg.pmml.PMML;
+import org.jpmml.model.PMMLUtil;
+import org.dmg.pmml.PMMLObject;
+import org.xml.sax.SAXException;
+import org.jpmml.model.SerializationUtil;
+import org.jpmml.evaluator.Evaluator;
+import org.jpmml.evaluator.ModelField;
 
 
-//import com.beust.jcommander.JCommander;
-//import com.beust.jcommander.Parameter;
-//import com.beust.jcommander.ParameterException;
-//import org.dmg.pmml.PMML;
-//import org.jpmml.evaluator.EvaluatorUtil;
-//import org.jpmml.evaluator.testing.CsvUtil;
-//import org.jpmml.model.PMMLUtil;
+import javax.xml.parsers.ParserConfigurationException;
+
+import jakarta.xml.bind.JAXBException;
 
 
 public class MonitorActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
@@ -70,7 +81,8 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private SensorManager sm;
     private boolean monitoringStatus = false;
     private Context c;
-    private File inferenceTempFile, filteredDataFile;
+    private File inferenceTempFile;
+    private FileInputStream ModelFile;
     private StringBuilder rawData, filteredData;
     private XYPlot plot;
 
@@ -90,6 +102,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private int trainValue = 0;
 
     private int monitoringCounter = 0;
+    private Evaluator evaluator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,7 +111,29 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         setSensors();
         c = this.getBaseContext();
         initPlot();
+        /** Create Classifier from PMML file **/
+        try(FileInputStream is = new FileInputStream(c.getFilesDir() + "/model.pmml.ser")){
+            try {
+                PMML pmml = SerializationUtil.deserializePMML(is);
+                /** Build the model **/
+                ModelEvaluatorBuilder evaluatorBuilder = new ModelEvaluatorBuilder(pmml);
+                evaluator = evaluatorBuilder.build();
+                evaluator.verify();
+                Log.i("EVALUATOR:", "BUILT");
+                List<InputField> inputFields = evaluator.getInputFields();
+                Log.i("INPUT FIELDS:", inputFields.toString());
+                List<TargetField> targetFields = evaluator.getTargetFields();
+                Log.i("TARGET FIELDS:", targetFields.toString());
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
 
     @Override
     public void onClick(View v) {
@@ -137,28 +172,9 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         }
 
         if (monitoringCounter == MONITORING_REPETITIONS){
-            stopMonitoring();
             returnInference(inferenceTempFile.getAbsolutePath());
+            stopMonitoring();
         }
-    }
-
-    private void applyLPF() {
-        final float tm = System.nanoTime();
-        final float dt = ((tm - beginTime) / 1000000000.0f) / count;
-
-        final float alpha = rc / (rc + dt);
-        // alpha = 0.0909
-
-        if (count == 0) {
-            lpfPrevData[0] = (1 - alpha) * rawAccData[0];
-            lpfPrevData[1] = (1 - alpha) * rawAccData[1];
-            lpfPrevData[2] = (1 - alpha) * rawAccData[2];
-        } else {
-            lpfPrevData[0] = alpha * lpfPrevData[0] + (1 - alpha) * rawAccData[count * 3];
-            lpfPrevData[1] = alpha * lpfPrevData[1] + (1 - alpha) * rawAccData[(count * 3) + 1];
-            lpfPrevData[2] = alpha * lpfPrevData[2] + (1 - alpha) * rawAccData[(count * 3) + 2];
-        }
-        ++count;
     }
 
     private void startMonitoring() {
@@ -241,13 +257,45 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                     /** Write sample data in the map **/
                     if (values.length > 1 && keys.length > 1){
                         for (int i=0; i<SAMPLE_SIZE*3; i++){
-                            Log.i("key: ", keys[i]);
-                            Log.i("value: ", values[i]);
+                            //Log.i("key: ", keys[i]);
+                            //Log.i("value: ", values[i]);
                             arguments.put(keys[i], values[i]);
                         }
                         /** get Inference value from the model **/
+
                         result = 2;
                         arguments.clear();
+                        arguments.put("h1", "0.174002634");
+                        arguments.put("h2", "0.1817945");
+                        arguments.put("h3", "0.178889336");
+                        arguments.put("h4", "0.155451962");
+                        arguments.put("h5", "0.287481128");
+                        arguments.put("h6", "0.0");
+                        arguments.put("h7", "0.0");
+                        arguments.put("h8", "0.573152572");
+                        arguments.put("h9", "0.543980369");
+                        arguments.put("h10", "0.551715661");
+                        arguments.put("h11", "0.564567297");
+                        arguments.put("h12", "0.5732014");
+                        arguments.put("h13", "0.570098278");
+                        arguments.put("h14", "0.568823669");
+                        arguments.put("h15", "0.796384088");
+                        arguments.put("h16", "0.84116734");
+                        arguments.put("h17", "0.996798545");
+                        arguments.put("h18", "0.957883786");
+                        arguments.put("h19", "0.99223642");
+                        arguments.put("h20", "1.0");
+                        arguments.put("h21", "1.0");
+                        arguments.put("h22", "1.0");
+                        arguments.put("h23", "0.938943785");
+                        Log.i("Arguments Map: ", arguments.toString());
+                        //List<InputField> inputFields = evaluator.getInputFields();
+                        //Log.i("Input fields: ", inputFields.toString());
+
+                        // Printing primary result (y) field(s)
+                        //List<TargetField> targetFields = evaluator.getTargetFields();
+                        //Log.i("Input fields: ", targetFields.toString());
+
                         if (result == 0){ busValue++; }
                         else if (result == 1){ carValue++; }
                         else if (result == 2){ motoValue++; }
