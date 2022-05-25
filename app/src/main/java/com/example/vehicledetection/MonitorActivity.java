@@ -16,8 +16,6 @@ import android.hardware.SensorManager;
 import android.os.SystemClock;
 import android.util.Log;
 import android.widget.Chronometer;
-import android.widget.TextView;
-import android.content.res.AssetManager;
 
 import com.androidplot.xy.BarFormatter;
 import com.androidplot.xy.BarRenderer;
@@ -33,43 +31,27 @@ import java.io.FileReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import java.io.IOException;
 
-import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import org.jpmml.evaluator.Evaluator;
-import org.jpmml.evaluator.EvaluatorBuilder;
 import org.jpmml.evaluator.EvaluatorUtil;
-import org.jpmml.evaluator.LoadingModelEvaluatorBuilder;
 import org.jpmml.evaluator.InputField;
 import org.jpmml.evaluator.TargetField;
 import org.jpmml.evaluator.ModelEvaluatorBuilder;
 import org.dmg.pmml.PMML;
-import org.jpmml.model.PMMLUtil;
-import org.dmg.pmml.PMMLObject;
-import org.xml.sax.SAXException;
 import org.jpmml.model.SerializationUtil;
-import org.jpmml.evaluator.Evaluator;
-import org.jpmml.evaluator.ModelField;
 
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import jakarta.xml.bind.JAXBException;
 
 
 public class MonitorActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
 
     private static final int MONITORING_REPETITIONS = 2; // collect data for 6 time windows (5s each)
-    private static final int SAMPLE_SIZE = 250;
+    private static final int SAMPLE_SIZE = 256;
     private static final int RECORDS_SEC = 40;
     private static final int BUS = 0;
     private static final int CAR = 1;
@@ -82,17 +64,8 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private boolean monitoringStatus = false;
     private Context c;
     private File inferenceTempFile;
-    private FileInputStream ModelFile;
     private StringBuilder rawData, filteredData;
     private XYPlot plot;
-
-    private final float[] rawAccData = new float[SAMPLE_SIZE * 3];
-
-    // LPF
-    private final float[] lpfPrevData = new float[3];
-    private int count = 0;
-    private final float beginTime = System.nanoTime();
-    private final float rc = 0.002f;
 
     // Monitoring results
     private int busValue = 0;
@@ -100,7 +73,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private int motoValue = 0;
     private int walkValue = 0;
     private int trainValue = 0;
-
+    private int count = 0;
     private int monitoringCounter = 0;
     private Evaluator evaluator;
 
@@ -245,7 +218,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private void returnInference(String dataFilePath) {
         int result = 10; // not recognizable value
         /** Read arguments from File and execute the model **/
-        HashMap<String, String> arguments = new HashMap<>(); // create a map for the argument values (accx0:0,1 , accy0:0,05 ...)
+        HashMap<String, String> arguments = new HashMap<>(); // create a map for the argument values
         String line;
         try (BufferedReader reader = new BufferedReader(new FileReader(dataFilePath))) {
             line = reader.readLine();
@@ -257,45 +230,15 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                     /** Write sample data in the map **/
                     if (values.length > 1 && keys.length > 1){
                         for (int i=0; i<SAMPLE_SIZE*3; i++){
-                            //Log.i("key: ", keys[i]);
-                            //Log.i("value: ", values[i]);
                             arguments.put(keys[i], values[i]);
                         }
                         /** get Inference value from the model **/
-
-                        result = 2;
-                        arguments.clear();
-                        arguments.put("h1", "0.174002634");
-                        arguments.put("h2", "0.1817945");
-                        arguments.put("h3", "0.178889336");
-                        arguments.put("h4", "0.155451962");
-                        arguments.put("h5", "0.287481128");
-                        arguments.put("h6", "0.0");
-                        arguments.put("h7", "0.0");
-                        arguments.put("h8", "0.573152572");
-                        arguments.put("h9", "0.543980369");
-                        arguments.put("h10", "0.551715661");
-                        arguments.put("h11", "0.564567297");
-                        arguments.put("h12", "0.5732014");
-                        arguments.put("h13", "0.570098278");
-                        arguments.put("h14", "0.568823669");
-                        arguments.put("h15", "0.796384088");
-                        arguments.put("h16", "0.84116734");
-                        arguments.put("h17", "0.996798545");
-                        arguments.put("h18", "0.957883786");
-                        arguments.put("h19", "0.99223642");
-                        arguments.put("h20", "1.0");
-                        arguments.put("h21", "1.0");
-                        arguments.put("h22", "1.0");
-                        arguments.put("h23", "0.938943785");
                         Log.i("Arguments Map: ", arguments.toString());
-                        //List<InputField> inputFields = evaluator.getInputFields();
-                        //Log.i("Input fields: ", inputFields.toString());
-
-                        // Printing primary result (y) field(s)
-                        //List<TargetField> targetFields = evaluator.getTargetFields();
-                        //Log.i("Input fields: ", targetFields.toString());
-
+                        Map<String, ?> results = evaluator.evaluate(arguments);
+                        results = EvaluatorUtil.decodeAll(results);
+                        Log.i("RESULTS: ", results.toString());
+                        arguments.clear();
+                        result = (int) results.get("y");
                         if (result == 0){ busValue++; }
                         else if (result == 1){ carValue++; }
                         else if (result == 2){ motoValue++; }
@@ -346,7 +289,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         s1.getX(0);
         Rect bounds = new Rect();
         bounds.height(); //This should give you the height of the wrapped_content
-
+/**
         TextView tv1 = findViewById(R.id.textViewBus);
         tv1.setPadding(225 + 1 * 250,  2100 - 490 - (6 * 215), 0, 0);
         tv1.setText("BUS");
@@ -355,7 +298,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         tv2.setText("CAR");
         plot.getLayoutManager().refreshLayout();
         plot.redraw();
-
+**/
     }
 
 }
