@@ -6,48 +6,33 @@
     android:layout_height="match_parent"
     tools:context=".MonitorActivity">
 
-    <Button
-        android:id="@+id/startMonitoringButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="168dp"
-        android:layout_marginTop="20dp"
-        android:onClick="onClick"
-        android:text="Monitor"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/monitoringChronometer" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        tools:layout_editor_absoluteX="-17dp"
+        tools:layout_editor_absoluteY="0dp">
 
-    <com.androidplot.xy.XYPlot
-        android:id="@+id/plot"
-        android:layout_width="318dp"
-        android:layout_height="546dp"
-        android:layout_marginStart="60dp"
-        android:layout_marginTop="68dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        <com.androidplot.xy.XYPlot
+            android:id="@+id/plot"
+            android:layout_marginBottom="10dp"
+            android:layout_width="300dp"
+            android:layout_height="546dp" />
 
-    <Chronometer
-        android:id="@+id/monitoringChronometer"
-        android:layout_width="41dp"
-        android:layout_height="17dp"
-        android:layout_marginStart="196dp"
-        android:layout_marginTop="16dp"
-        android:text="Chronometer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/plot" />
+        <Chronometer
+            android:id="@+id/monitoringChronometer"
+            android:layout_width="41dp"
+            android:layout_marginBottom="10dp"
+            android:layout_height="17dp"
+            android:text="Chronometer" />
 
-    <TextView
-        android:id="@+id/textViewBus"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        tools:layout_editor_absoluteX="76dp"
-        tools:layout_editor_absoluteY="24dp" />
-
-    <TextView
-        android:id="@+id/textViewCar"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        tools:layout_editor_absoluteX="104dp"
-        tools:layout_editor_absoluteY="20dp" />
+        <Button
+            android:id="@+id/startMonitoringButton"
+            android:layout_width="300dp"
+            android:layout_height="70dp"
+            android:onClick="onClick"
+            android:text="Monitor" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
