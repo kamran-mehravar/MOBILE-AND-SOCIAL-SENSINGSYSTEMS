@@ -48,7 +48,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private SeekBar overlappingBar;
     private int currentVehicle = -1, overlapProgress;
     private double[][] overlapData;
-    private DataWindow window;
 
     // accelerometer data
     private final static int MAX_TESTS_NUM = 256; // 5 seconds of window size
@@ -58,7 +57,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private double[][] mDecoupler;
     private FourierRunnable mFourierRunnable;
     private int mOffset;
-    private long mTimestamp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +66,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         c = this.getBaseContext();
         initListeners();
         removeButtonBorder();
-        window = new DataWindow(RECORDS_SEC);
 
         // FFT
         this.mSampleWindows = new double[][]{
@@ -85,8 +82,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         };
         // Declare the FourierRunnable.
         this.mFourierRunnable = new FourierRunnable(this.getDecoupler());
-        // Initialize the Timestamp.
-        this.mTimestamp = -1L;
+        // Initialize the Timestamp.;
         // Start the FourierRunnable.
         (new Thread(this.getFourierRunnable())).start();
     }
@@ -171,14 +167,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     Log.i("fail", "RUN");
                     // Is the FourierRunnable ready?
                     if (this.getFourierRunnable().isReady()) {
-                        // Fetch the Timestamp.
-                        final long lTimestamp = System.nanoTime();
-                        // Convert the difference in time into the corresponding time in seconds.
-                        final float lDelta = (float) ((lTimestamp - this.getTimestamp()) * (0.0000000001));
-                        // Determine the Sample Rate.
-                        final float lFs = 1.0f / (lDelta / MAX_TESTS_NUM - (overlapProgress / 100f));
-                        // Provide the FourierRunnable with the Sample Rate.
-                        // this.getFourierRunnable().setSampleRate(lFs);
                         // Copy over the buffered data.
                         for (int i = 0; i < this.getSampleWindows().length; i++) {
                             // Copy the data over to the shared buffer.
@@ -195,8 +183,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     }
                     // Reset the Offset.
                     this.setOffset((int) (MAX_TESTS_NUM * overlapProgress / 100f));
-                    // Re-initialize the Timestamp.
-                    this.setTimestamp(System.nanoTime());
+                    // Re-initialize the Timestamp.;
                 }
             }
         } catch (Exception e) {
@@ -235,9 +222,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     for (int i = 0; i < 3; i++) {
                         final double[] lResult = finalBuffer[i];
                         for (int j = 0; j < lResult.length; j++) {
-//                            if (j < MAX_TESTS_NUM/2) {
-                            sbMagnitude.append(",").append(lResult[j]);
-//                            }
+                            if (j < MAX_TESTS_NUM/2) {
+                                sbMagnitude.append(",").append(lResult[j]);
+                            }
                             if (j >= MAX_TESTS_NUM - (MAX_TESTS_NUM * (overlapProgress / 100f))) {
                                 overlapData[i][j - (MAX_TESTS_NUM - (int) (MAX_TESTS_NUM * overlapProgress / 100f))] = lResult[j];
                             }
@@ -245,7 +232,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                         if (i == 2) {
                             sbMagnitude.append("\n");
                         }
-                        writeOnFile(sbMagnitude.toString(), f);
+                        DataWindow.writeOnFile(sbMagnitude.toString(), f);
                         sbMagnitude = new StringBuilder();
                     }
                     first = true;
@@ -274,14 +261,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     private int getOffset() {
         return this.mOffset;
-    }
-
-    private void setTimestamp(final long pTimestamp) {
-        this.mTimestamp = pTimestamp;
-    }
-
-    private long getTimestamp() {
-        return this.mTimestamp;
     }
 
     private void startRecording() {
@@ -355,16 +334,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
-    public void writeOnFile(String data, File file) {
-        try {
-            FileWriter fw = new FileWriter(file, true);
-            fw.write(data);
-            fw.close();
-        } catch (IOException e) {
-            Log.i("ERROR", e.toString());
-        }
-    }
-
     private static long computeUUID() {
         long uuid;
         do {
@@ -399,7 +368,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private final class FourierRunnable implements Runnable {
         /* Member Variables. */
         private final double[][] mSampleBuffer;
-        private final double[][] mResultBuffer;
+        private double[][] mResultBuffer;
         private boolean mReady;
         private float mSampleRate;
 
@@ -436,32 +405,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                         // Assert that we're in the middle of processing, and therefore no longer ready.
                         this.setReady(false);
                     }
-                    // Declare the SampleBuffer.
-                    final double[] lFFT = new double[DataCollectionActivity.MAX_TESTS_NUM * 2];
-                    // Allocate the FFT.
-                    final DoubleFFT_1D lDoubleFFT = new DoubleFFT_1D(DataCollectionActivity.MAX_TESTS_NUM);
-                    // Iterate the axis. (Limit to X only.)
-                    for (int i = 0; i < 3; i++) {
-                        // Fetch the sampled data.
-                        final double[] lSamples = this.getSampleBuffer()[i];
-                        // Copy over the Samples.
-                        System.arraycopy(lSamples, 0, lFFT, 0, lSamples.length);
-                        // Parse the FFT.
-                        lDoubleFFT.realForwardFull(lFFT);
-                        // Iterate the results. (Real/Imaginary components are interleaved.) (Ignoring the first harmonic.)
-                        for (int j = 0; j < lFFT.length; j += 2) {
-                            // Fetch the Real and Imaginary Components.
-                            final double lRe = lFFT[j];
-                            final double lIm = lFFT[j + 1];
-                            // Calculate the Magnitude, in decibels, of this current signal index.
-                            final double lMagnitude = 20.0 * Math.log10(Math.sqrt((lRe * lRe) + (lIm * lIm)) / lSamples.length);
-                            // Calculate the frequency at this magnitude.
-                            // final double lFrequency = j * this.getSampleRate() / lFFT.length;
-                            // Update the ResultBuffer.
-                            this.getResultBuffer()[i][j / 2] = lMagnitude;
-                            // this.getResultBuffer()[i][j / 2][1] = lFrequency;
-                        }
-                    }
+                    DataWindow.computeFFT(this.getSampleBuffer(), this.getResultBuffer());
                     // Update the Callback.
                     DataCollectionActivity.this.onFourierResult(this.getResultBuffer());
                 }
@@ -486,11 +430,5 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         public final boolean isReady() {
             return this.mReady;
         }
-        /*protected final void setSampleRate(final float pSampleRate) {
-            this.mSampleRate = pSampleRate;
-        }*/
-/*        public final float getSampleRate() {
-            return this.mSampleRate;
-        }*/
     }
 }

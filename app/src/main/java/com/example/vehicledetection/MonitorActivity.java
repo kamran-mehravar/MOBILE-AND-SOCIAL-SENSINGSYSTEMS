@@ -52,12 +52,6 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
 
     private static final int MONITORING_REPETITIONS = 2; // collect data for 6 time windows (5s each)
     private static final int SAMPLE_SIZE = 256;
-    private static final int RECORDS_SEC = 40;
-    private static final int BUS = 0;
-    private static final int CAR = 1;
-    private static final int MOTO = 2;
-    private static final int WALK = 3;
-    private static final int TRAIN = 4;
 
     private Sensor sAcceleration;
     private SensorManager sm;
@@ -73,9 +67,14 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private int motoValue = 0;
     private int walkValue = 0;
     private int trainValue = 0;
-    private int count = 0;
     private int monitoringCounter = 0;
     private Evaluator evaluator;
+
+    // FFT
+    private double[][] mSampleWindows;
+    private double[][] mDecoupler;
+    private MonitorActivity.FourierRunnable mFourierRunnable;
+    private int mOffset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,28 +124,69 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
-            float x = event.values[0];
-            float y = event.values[1];
-            float z = event.values[2];
-            if (count == 0) {rawData.append(x).append(",").append(y).append(",").append(z);}
-            else {rawData.append(",").append(x).append(",").append(y).append(",").append(z);}
-            count++;
-            // System.arraycopy(event.values, 0, rawAccData, rawAccDataIdx, 3);
-            // applyLPF();
-            // filteredData.append(",").append(lpfPrevData[0]).append(",").append(lpfPrevData[1]).append(",").append(lpfPrevData[2]);
-            if (count == SAMPLE_SIZE) {
-                writeOnFile("\n" + rawData.toString(), inferenceTempFile);
-                Log.i("Save Window"+monitoringCounter, "");
-                count = 0;
-                rawData = new StringBuilder();
-                filteredData = new StringBuilder();
-                monitoringCounter++;
+            for (int i = 0; i < event.values.length; i++) {
+                // Update the SampleWindows.
+                this.getSampleWindows()[i][this.getOffset()] = event.values[i];
+            }
+            // Increase the Offset.
+            this.setOffset(this.getOffset() + 1);
+            // Is the buffer full?
+            if (this.getOffset() == SAMPLE_SIZE) {
+                Log.i("fail", "RUN");
+                // Is the FourierRunnable ready?
+                if (this.getFourierRunnable().isReady()) {
+                    // Copy over the buffered data.
+                    for (int i = 0; i < this.getSampleWindows().length; i++) {
+                        // Copy the data over to the shared buffer.
+                        System.arraycopy(this.getSampleWindows()[i], 0, this.getDecoupler()[i], 0, this.getSampleWindows()[i].length);
+                    }
+                    // Synchronize along the Decoupler.
+                    synchronized (this.getDecoupler()) {
+                        // Notify any listeners. (There should be one; the FourierRunnable!)
+                        this.getDecoupler().notify();
+                    }
+                } else {
+                    // Here, we've wasted an entire frame of accelerometer data.
+                    Log.d("TB/API", "Wasted samples.");
+                }
+                // Reset the Offset.
+                this.monitoringCounter++;
+                this.setOffset(0);
+                // Re-initialize the Timestamp.;
             }
         }
 
         if (monitoringCounter == MONITORING_REPETITIONS){
             returnInference(inferenceTempFile.getAbsolutePath());
             stopMonitoring();
+        }
+    }
+
+    // FFT
+    public final void onFourierResult(final double[][] pResultBuffer) {
+        // Linearize execution.
+        try {
+            this.runOnUiThread(new Runnable() {
+                @Override
+                public final void run() {
+                    StringBuilder sbMagnitude = new StringBuilder();
+                    for (int i = 0; i < 3; i++) {
+                        final double[] lResult = pResultBuffer[i];
+                        for (int j = 0; j < lResult.length; j++) {
+                            if (j < SAMPLE_SIZE/2) {
+                                sbMagnitude.append(",").append(lResult[j]);
+                            }
+                        }
+                        if (i == 2) {
+                            sbMagnitude.append("\n");
+                        }
+                        DataWindow.writeOnFile(sbMagnitude.toString(), inferenceTempFile);
+                        sbMagnitude = new StringBuilder();
+                    }
+                }
+            });
+        } catch (Exception e) {
+            Log.i("fail", "", e);
         }
     }
 
@@ -159,7 +199,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         rawData = new StringBuilder();
         timeRecorded.setBase(SystemClock.elapsedRealtime());
         timeRecorded.start();
-        count=0;
+        monitoringCounter = 0;
         busValue = 0;
         carValue = 0;
         motoValue = 0;
@@ -202,16 +242,6 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    public void writeOnFile(String data, File file) {
-        try {
-            FileWriter fw = new FileWriter(file, true);
-            fw.write(data);
-            fw.close();
-        } catch (IOException e) {
-            Log.i("ERROR", e.toString());
         }
     }
 
@@ -299,6 +329,91 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         plot.getLayoutManager().refreshLayout();
         plot.redraw();
 **/
+    }
+
+    private double[][] getSampleWindows() {
+        return this.mSampleWindows;
+    }
+
+    private final double[][] getDecoupler() {
+        return this.mDecoupler;
+    }
+
+    private final MonitorActivity.FourierRunnable getFourierRunnable() {
+        return this.mFourierRunnable;
+    }
+
+    private void setOffset(final int pOffset) {
+        this.mOffset = pOffset;
+    }
+
+    private int getOffset() {
+        return this.mOffset;
+    }
+
+    private final class FourierRunnable implements Runnable {
+        /* Member Variables. */
+        private final double[][] mSampleBuffer;
+        private double[][] mResultBuffer;
+        private boolean mReady;
+
+        /**
+         * Constructor.
+         */
+        public FourierRunnable(final double[][] pSampleBuffer) {
+            // Initialize Member Variables.
+            this.mSampleBuffer = pSampleBuffer;
+            this.mResultBuffer = new double[][]{
+                    // Storing two components; Magnitude _and_ Frequency.
+                    new double[MonitorActivity.SAMPLE_SIZE],
+                    new double[MonitorActivity.SAMPLE_SIZE],
+                    new double[MonitorActivity.SAMPLE_SIZE],
+            };
+        }
+
+        @Override
+        public final void run() {
+            // Do forever.
+            try {
+                while (true) { /** TODO: Extern control */
+                    // Synchronize along the SampleBuffer.
+                    synchronized (this.getSampleBuffer()) {
+                        // Assert that we're ready for new samples.
+                        this.setReady(true);
+                        // Wait to be notified for when the SampleBuffer is ready.
+                        try {
+                            this.getSampleBuffer().wait();
+                        } catch (InterruptedException pInterruptedException) {
+                            pInterruptedException.printStackTrace();
+                        }
+                        // Assert that we're in the middle of processing, and therefore no longer ready.
+                        this.setReady(false);
+                    }
+                    DataWindow.computeFFT(this.getSampleBuffer(), this.getResultBuffer());
+                    // Update the Callback.
+                    MonitorActivity.this.onFourierResult(this.getResultBuffer());
+                }
+            } catch (Exception e) {
+                Log.i("fail", "", e);
+            }
+        }
+
+        /* Getters. */
+        private final double[][] getSampleBuffer() {
+            return this.mSampleBuffer;
+        }
+
+        private final double[][] getResultBuffer() {
+            return this.mResultBuffer;
+        }
+
+        private final void setReady(final boolean pIsReady) {
+            this.mReady = pIsReady;
+        }
+
+        public final boolean isReady() {
+            return this.mReady;
+        }
     }
 
 }
