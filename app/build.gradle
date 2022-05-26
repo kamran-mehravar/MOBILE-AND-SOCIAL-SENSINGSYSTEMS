@@ -41,6 +41,7 @@ dependencies {
     implementation 'org.jpmml:pmml-model:1.6.3'
     implementation 'org.jpmml:pmml-evaluator:1.6.3'
     implementation 'xerces:xercesImpl:2.12.1'
+    implementation files('libs\\jtransforms-2.4.0.jar')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
