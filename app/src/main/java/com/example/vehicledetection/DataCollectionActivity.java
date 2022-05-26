@@ -264,15 +264,19 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     private void startRecording() {
-        Chronometer timeRecorded = findViewById(R.id.chronometer1);
-        initTempFiles();
-        sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
-        recording = true;
-        first = false;
-        this.setOffset(0);
-        overlapData = new double[3][(int) (MAX_TESTS_NUM * overlapProgress / 100f)];
-        timeRecorded.setBase(SystemClock.elapsedRealtime());
-        timeRecorded.start();
+        try {
+            Chronometer timeRecorded = findViewById(R.id.chronometer1);
+            f = DataWindow.initTempFiles("fft_" + this.overlapProgress, c.getFilesDir(), false);
+            sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
+            recording = true;
+            first = false;
+            this.setOffset(0);
+            overlapData = new double[3][(int) (MAX_TESTS_NUM * overlapProgress / 100f)];
+            timeRecorded.setBase(SystemClock.elapsedRealtime());
+            timeRecorded.start();
+        } catch(Exception e) {
+            Log.i("fail", "", e);
+        }
     }
 
     private void stopRecording() {
@@ -309,29 +313,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
         b = findViewById(R.id.trainButton);
         b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
-    }
-
-    public void initTempFiles() {
-        f = new File(c.getFilesDir(), "fft_" + this.overlapProgress + ".csv");
-        if (!f.exists()) {
-            StringBuilder init = new StringBuilder("LABEL,UUID");
-            for (int i = 0; i < MAX_TESTS_NUM / 2; i++) {
-                init.append(",").append("mx").append(i);
-            }
-            for (int i = 0; i < MAX_TESTS_NUM / 2; i++) {
-                init.append(",").append("my").append(i);
-            }
-            for (int i = 0; i < MAX_TESTS_NUM / 2; i++) {
-                init.append(",").append("mz").append(i);
-            }
-            try {
-                FileWriter fw = new FileWriter(f, true);
-                fw.write(init + "\n");
-                fw.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     private static long computeUUID() {

@@ -83,6 +83,24 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         setSensors();
         c = this.getBaseContext();
         initPlot();
+        // FFT
+        this.mSampleWindows = new double[][]{
+                // X, Y, Z.
+                new double[SAMPLE_SIZE],
+                new double[SAMPLE_SIZE],
+                new double[SAMPLE_SIZE],
+        };
+        this.mDecoupler = new double[][]{
+                // X, Y, Z.
+                new double[SAMPLE_SIZE],
+                new double[SAMPLE_SIZE],
+                new double[SAMPLE_SIZE],
+        };
+        // Declare the FourierRunnable.
+        this.mFourierRunnable = new MonitorActivity.FourierRunnable(this.getDecoupler());
+        // Initialize the Timestamp.;
+        // Start the FourierRunnable.
+        (new Thread(this.getFourierRunnable())).start();
         /** Create Classifier from PMML file **/
         try(FileInputStream is = new FileInputStream(c.getFilesDir() + "/model.pmml.ser")){
             try {
@@ -123,43 +141,48 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
-            for (int i = 0; i < event.values.length; i++) {
-                // Update the SampleWindows.
-                this.getSampleWindows()[i][this.getOffset()] = event.values[i];
-            }
-            // Increase the Offset.
-            this.setOffset(this.getOffset() + 1);
-            // Is the buffer full?
-            if (this.getOffset() == SAMPLE_SIZE) {
-                Log.i("fail", "RUN");
-                // Is the FourierRunnable ready?
-                if (this.getFourierRunnable().isReady()) {
-                    // Copy over the buffered data.
-                    for (int i = 0; i < this.getSampleWindows().length; i++) {
-                        // Copy the data over to the shared buffer.
-                        System.arraycopy(this.getSampleWindows()[i], 0, this.getDecoupler()[i], 0, this.getSampleWindows()[i].length);
-                    }
-                    // Synchronize along the Decoupler.
-                    synchronized (this.getDecoupler()) {
-                        // Notify any listeners. (There should be one; the FourierRunnable!)
-                        this.getDecoupler().notify();
-                    }
-                } else {
-                    // Here, we've wasted an entire frame of accelerometer data.
-                    Log.d("TB/API", "Wasted samples.");
+        try {
+            if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
+                for (int i = 0; i < event.values.length; i++) {
+                    // Update the SampleWindows.
+                    this.getSampleWindows()[i][this.getOffset()] = event.values[i];
                 }
-                // Reset the Offset.
-                this.monitoringCounter++;
-                this.setOffset(0);
-                // Re-initialize the Timestamp.;
+                // Increase the Offset.
+                this.setOffset(this.getOffset() + 1);
+                // Is the buffer full?
+                if (this.getOffset() == SAMPLE_SIZE) {
+                    Log.i("fail", "RUN");
+                    // Is the FourierRunnable ready?
+                    if (this.getFourierRunnable().isReady()) {
+                        // Copy over the buffered data.
+                        for (int i = 0; i < this.getSampleWindows().length; i++) {
+                            // Copy the data over to the shared buffer.
+                            System.arraycopy(this.getSampleWindows()[i], 0, this.getDecoupler()[i], 0, this.getSampleWindows()[i].length);
+                        }
+                        // Synchronize along the Decoupler.
+                        synchronized (this.getDecoupler()) {
+                            // Notify any listeners. (There should be one; the FourierRunnable!)
+                            this.getDecoupler().notify();
+                        }
+                    } else {
+                        // Here, we've wasted an entire frame of accelerometer data.
+                        Log.d("TB/API", "Wasted samples.");
+                    }
+                    // Reset the Offset.
+                    this.monitoringCounter++;
+                    this.setOffset(0);
+                    // Re-initialize the Timestamp.;
+                }
             }
+
+            if (monitoringCounter == MONITORING_REPETITIONS){
+                returnInference(inferenceTempFile.getAbsolutePath());
+                stopMonitoring();
+            }
+        } catch (Exception e) {
+            Log.i("fail", "", e);
         }
 
-        if (monitoringCounter == MONITORING_REPETITIONS){
-            returnInference(inferenceTempFile.getAbsolutePath());
-            stopMonitoring();
-        }
     }
 
     // FFT
@@ -180,6 +203,9 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                         if (i == 2) {
                             sbMagnitude.append("\n");
                         }
+                        if (i == 0) {
+                            sbMagnitude.replace(0, 1, "");
+                        }
                         DataWindow.writeOnFile(sbMagnitude.toString(), inferenceTempFile);
                         sbMagnitude = new StringBuilder();
                     }
@@ -192,7 +218,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
 
     private void startMonitoring() {
         Chronometer timeRecorded = findViewById(R.id.monitoringChronometer);
-        initTempFiles();
+        inferenceTempFile = DataWindow.initTempFiles("temp_sample_data", c.getFilesDir(), true);
         sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); // SENSOR_DELAY_GAME: 20ms sample interval
         monitoringStatus = true;
         filteredData = new StringBuilder();
@@ -213,7 +239,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         monitoringStatus = false;
         focus.setBase(SystemClock.elapsedRealtime());
         focus.stop();
-        inferenceTempFile.delete();
+        //inferenceTempFile.delete();
     }
 
     @Override
@@ -224,26 +250,6 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         sAcceleration = sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
     }
 
-    public void initTempFiles() {
-        inferenceTempFile = new File(c.getFilesDir(), "temp_sample_data.csv");
-        Log.i("path", c.getFilesDir().toString());
-        // filteredDataFile = new File(c.getFilesDir(), "data_collection_filtered_" + this.overlapProgress + ".csv");
-        // TODO also check other files
-        if (!inferenceTempFile.exists()) {
-            Log.i("create file", c.getFilesDir().toString());
-            StringBuilder init = new StringBuilder("accx0,accy0,accz0");
-            for (int i = 1; i < SAMPLE_SIZE; i++) {
-                init.append(",accx").append(i).append(",accy").append(i).append(",accz").append(i);
-            }
-            try {
-                FileWriter fw = new FileWriter(inferenceTempFile, true);
-                fw.write(init.toString());
-                fw.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
 
     private void returnInference(String dataFilePath) {
         int result = 10; // not recognizable value

@@ -50,4 +50,30 @@ public class DataWindow {
         }
     }
 
+    public static File initTempFiles(String fileName, File path, boolean isInference) {
+        File f = new File(path, fileName + ".csv");
+        if (!f.exists()) {
+            StringBuilder init;
+            if (isInference) init = new StringBuilder();
+            else init = new StringBuilder(",LABEL,UUID");
+            for (int i = 0; i < MAX_TESTS_NUM / 2; i++) {
+                init.append(",").append("mx").append(i);
+            }
+            for (int i = 0; i < MAX_TESTS_NUM / 2; i++) {
+                init.append(",").append("my").append(i);
+            }
+            for (int i = 0; i < MAX_TESTS_NUM / 2; i++) {
+                init.append(",").append("mz").append(i);
+            }
+            init.replace(0, 1, "");
+            try {
+                FileWriter fw = new FileWriter(f, true);
+                fw.write(init + "\n");
+                fw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return f;
+    }
 }
