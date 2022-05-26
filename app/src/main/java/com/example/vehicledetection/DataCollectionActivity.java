@@ -46,12 +46,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private File f;
     private SeekBar overlappingBar;
     private int currentVehicle = -1, overlapProgress;
-    private StringBuilder[][] overlapData;
+    private double[][] overlapData;
     private DataWindow window;
 
     // accelerometer data
     private final static int MAX_TESTS_NUM = 256; // 5 seconds of window size
-    private static int OVERLAP_RESULTS;
 
     // FFT
     private double[][]      mSampleWindows;
@@ -167,7 +166,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                     // Increase the Offset.
                     this.setOffset(this.getOffset() + 1);
                     // Is the buffer full?
-                    if(this.getOffset() == OVERLAP_RESULTS) {
+                    if(this.getOffset() == MAX_TESTS_NUM) {
                         Log.i("fail", "RUN");
                         // Is the FourierRunnable ready?
                         if(this.getFourierRunnable().isReady()) {
@@ -176,9 +175,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                             // Convert the difference in time into the corresponding time in seconds.
                             final float lDelta     = (float)((lTimestamp - this.getTimestamp()) * (0.0000000001));
                             // Determine the Sample Rate.
-                            final float lFs        = 1.0f / (lDelta / OVERLAP_RESULTS);
+                            final float lFs        = 1.0f / (lDelta / MAX_TESTS_NUM - (overlapProgress/100f));
                             // Provide the FourierRunnable with the Sample Rate.
-                            this.getFourierRunnable().setSampleRate(lFs);
+                            // this.getFourierRunnable().setSampleRate(lFs);
                             // Copy over the buffered data.
                             for(int i = 0; i < this.getSampleWindows().length; i++) {
                                 // Copy the data over to the shared buffer.
@@ -195,13 +194,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                             Log.d("TB/API", "Wasted samples.");
                         }
                         // Reset the Offset.
-                        this.setOffset(0);
-                        this.mSampleWindows   = new double[][] {
-                                // X, Y, Z.
-                                new double[MAX_TESTS_NUM],
-                                new double[MAX_TESTS_NUM],
-                                new double[MAX_TESTS_NUM],
-                        };
+                        this.setOffset((int) (MAX_TESTS_NUM * overlapProgress/100f));
                         // Re-initialize the Timestamp.
                         this.setTimestamp(System.nanoTime());
                     }
@@ -212,36 +205,43 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     }
 
+    private double[][] getFinalResultBuffer(double[][] pResultBuffer) {
+        double[][] finalResult = new double[3][MAX_TESTS_NUM];
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < overlapData[i].length; j++) {
+                finalResult[i][j] = overlapData[i][j];
+            }
+            for (int j = overlapData[i].length; j < MAX_TESTS_NUM; j++) {
+                finalResult[i][j] = pResultBuffer[i][j-overlapData[i].length];
+            }
+        }
+        return finalResult;
+    }
+
     // FFT
-    public final void onFourierResult(final double[][][] pResultBuffer) {
+    public final void onFourierResult(final double[][] pResultBuffer) {
         // Linearize execution.
         try {
             this.runOnUiThread(new Runnable() {
                 @Override
                 public final void run() {
-                    StringBuilder sbfr = new StringBuilder(currentVehicle + "," + DataCollectionActivity.computeUUID());
-                    StringBuilder sbam = new StringBuilder();
+                    double[][] finalBuffer = getFinalResultBuffer(pResultBuffer);
+                    StringBuilder sbMagnitude = new StringBuilder(currentVehicle + "," + DataCollectionActivity.computeUUID());
                     for (int i = 0; i < 3; i++) {
-                        final double[][] lResult = pResultBuffer[i];
-                        sbfr.append(overlapData[i][1]);
-                        sbam.append(overlapData[i][0]);
-                        overlapData[i][1] = new StringBuilder();
-                        overlapData[i][0] = new StringBuilder();
+                        final double[] lResult = finalBuffer[i];
                         for (int j = 0; j < lResult.length; j++) {
-                            sbfr.append(",").append(lResult[j][1]);
-                            sbam.append(",").append(lResult[j][0]);
-                            if (j > OVERLAP_RESULTS - (MAX_TESTS_NUM * (overlapProgress / 100.0))) {
-                                overlapData[i][0].append(",").append(lResult[j][0]);
-                                overlapData[i][1].append(",").append(lResult[j][1]);
+                            if (j < MAX_TESTS_NUM/2) {
+                                sbMagnitude.append(",").append(lResult[j]);
+                            }
+                            if (j > MAX_TESTS_NUM - (MAX_TESTS_NUM * (overlapProgress / 100f))) {
+                                overlapData[i][j - (MAX_TESTS_NUM - (int)(MAX_TESTS_NUM*overlapProgress/100f))] = lResult[j];
                             }
                         }
                         if (i == 2) {
-                            sbam.append("\n");
+                            sbMagnitude.append("\n");
                         }
-                        OVERLAP_RESULTS = (int) (MAX_TESTS_NUM - (MAX_TESTS_NUM * (overlapProgress / 100.0)));
-                        writeOnFile(sbfr.append(sbam).toString(), f);
-                        sbfr = new StringBuilder();
-                        sbam = new StringBuilder();
+                        writeOnFile(sbMagnitude.toString(), f);
+                        sbMagnitude = new StringBuilder();
                     }
                 }
             });
@@ -283,8 +283,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         initTempFiles();
         sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
         recording = true;
-        OVERLAP_RESULTS = 256;
-        overlapData = new StringBuilder[][]{{ new StringBuilder(), new StringBuilder()}, {new StringBuilder(), new StringBuilder()}, {new StringBuilder(), new StringBuilder()}};
+        this.setOffset(0);
+        overlapData = new double[3][(int)(MAX_TESTS_NUM * overlapProgress/100f)];
         timeRecorded.setBase(SystemClock.elapsedRealtime());
         timeRecorded.start();
     }
@@ -329,23 +329,14 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         f = new File(c.getFilesDir(), "fft_" + this.overlapProgress + ".csv");
         if (!f.exists()) {
             StringBuilder init = new StringBuilder("LABEL,UUID");
-            for(int i = 0; i < MAX_TESTS_NUM; i++) {
-                init.append(",").append("fx").append(i);
+            for(int i = 0; i < MAX_TESTS_NUM/2; i++) {
+                init.append(",").append("mx").append(i);
             }
-            for(int i = 0; i < MAX_TESTS_NUM; i++) {
-                init.append(",").append("ax").append(i);
+            for(int i = 0; i < MAX_TESTS_NUM/2; i++) {
+                init.append(",").append("my").append(i);
             }
-            for(int i = 0; i < MAX_TESTS_NUM; i++) {
-                init.append(",").append("fy").append(i);
-            }
-            for(int i = 0; i < MAX_TESTS_NUM; i++) {
-                init.append(",").append("ay").append(i);
-            }
-            for(int i = 0; i < MAX_TESTS_NUM; i++) {
-                init.append(",").append("fz").append(i);
-            }
-            for(int i = 0; i < MAX_TESTS_NUM; i++) {
-                init.append(",").append("az").append(i);
+            for(int i = 0; i < MAX_TESTS_NUM/2; i++) {
+                init.append(",").append("mz").append(i);
             }
             try {
                 FileWriter fw = new FileWriter(f, true);
@@ -401,18 +392,18 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private final class FourierRunnable implements Runnable {
         /* Member Variables. */
         private final double[][] mSampleBuffer;
-        private final double[][][] mResultBuffer;
+        private final double[][] mResultBuffer;
         private       boolean    mReady;
         private       float      mSampleRate;
         /** Constructor. */
         public FourierRunnable(final double[][] pSampleBuffer) {
             // Initialize Member Variables.
             this.mSampleBuffer = pSampleBuffer;
-            this.mResultBuffer = new double[][][] {
+            this.mResultBuffer = new double[][] {
                     // Storing two components; Magnitude _and_ Frequency.
-                    new double[DataCollectionActivity.MAX_TESTS_NUM][2],
-                    new double[DataCollectionActivity.MAX_TESTS_NUM][2],
-                    new double[DataCollectionActivity.MAX_TESTS_NUM][2],
+                    new double[DataCollectionActivity.MAX_TESTS_NUM],
+                    new double[DataCollectionActivity.MAX_TESTS_NUM],
+                    new double[DataCollectionActivity.MAX_TESTS_NUM],
             };
             this.mSampleRate   = -1.0f;
         }
@@ -453,10 +444,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                             // Calculate the Magnitude, in decibels, of this current signal index.
                             final double lMagnitude = 20.0 * Math.log10(Math.sqrt((lRe * lRe) + (lIm * lIm)) / lSamples.length);
                             // Calculate the frequency at this magnitude.
-                            final double lFrequency = j * this.getSampleRate() / lFFT.length;
+                            // final double lFrequency = j * this.getSampleRate() / lFFT.length;
                             // Update the ResultBuffer.
-                            this.getResultBuffer()[i][j / 2][0] = lMagnitude;
-                            this.getResultBuffer()[i][j / 2][1] = lFrequency;
+                            this.getResultBuffer()[i][j / 2] = lMagnitude;
+                            // this.getResultBuffer()[i][j / 2][1] = lFrequency;
                         }
                     }
                     // Update the Callback.
@@ -470,7 +461,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         private final double[][] getSampleBuffer() {
             return this.mSampleBuffer;
         }
-        private final double[][][] getResultBuffer() {
+        private final double[][] getResultBuffer() {
             return this.mResultBuffer;
         }
         private final void setReady(final boolean pIsReady) {
@@ -479,11 +470,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         public final boolean isReady() {
             return this.mReady;
         }
-        protected final void setSampleRate(final float pSampleRate) {
+        /*protected final void setSampleRate(final float pSampleRate) {
             this.mSampleRate = pSampleRate;
-        }
-        public final float getSampleRate() {
+        }*/
+/*        public final float getSampleRate() {
             return this.mSampleRate;
-        }
+        }*/
     }
 }
