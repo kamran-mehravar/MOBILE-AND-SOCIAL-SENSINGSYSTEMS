@@ -197,7 +197,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                         final double[] lResult = pResultBuffer[i];
                         for (int j = 0; j < lResult.length; j++) {
                             if (j < SAMPLE_SIZE/2) {
-                                sbMagnitude.append(",").append(lResult[j]);
+                                sbMagnitude.append(",").append(Math.pow(10, lResult[j]/20));
                             }
                         }
                         if (i == 2) {

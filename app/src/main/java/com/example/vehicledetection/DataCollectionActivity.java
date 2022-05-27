@@ -223,7 +223,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                         final double[] lResult = finalBuffer[i];
                         for (int j = 0; j < lResult.length; j++) {
                             if (j < MAX_TESTS_NUM/2) {
-                                sbMagnitude.append(",").append(lResult[j]);
+                                sbMagnitude.append(",").append(Math.pow(10, lResult[j]/20));
                             }
                             if (j >= MAX_TESTS_NUM - (MAX_TESTS_NUM * (overlapProgress / 100f))) {
                                 overlapData[i][j - (MAX_TESTS_NUM - (int) (MAX_TESTS_NUM * overlapProgress / 100f))] = lResult[j];
@@ -386,7 +386,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                         // Assert that we're in the middle of processing, and therefore no longer ready.
                         this.setReady(false);
                     }
-                    DataWindow.computeFFT(this.getSampleBuffer(), this.getResultBuffer());
+                    mResultBuffer = DataWindow.computeFFT(this.getSampleBuffer(), this.getResultBuffer());
                     // Update the Callback.
                     DataCollectionActivity.this.onFourierResult(this.getResultBuffer());
                 }
