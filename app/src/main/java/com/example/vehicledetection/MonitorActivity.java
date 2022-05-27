@@ -63,11 +63,9 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private XYPlot plot;
 
     // Monitoring results
-    private int busValue = 0;
-    private int carValue = 0;
-    private int motoValue = 0;
+    private int bikeValue = 0;
+    private int scooterValue = 0;
     private int walkValue = 0;
-    private int trainValue = 0;
     private int monitoringCounter = 0;
     private Evaluator evaluator;
 
@@ -228,11 +226,9 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         timeRecorded.setBase(SystemClock.elapsedRealtime());
         timeRecorded.start();
         monitoringCounter = 0;
-        busValue = 0;
-        carValue = 0;
-        motoValue = 0;
+        scooterValue = 0;
+        bikeValue = 0;
         walkValue = 0;
-        trainValue = 0;
     }
 
     private void stopMonitoring() {
@@ -277,13 +273,10 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                         Log.i("RESULTS: ", results.toString());
                         arguments.clear();
                         result = (int) results.get("y");
-                        if (result == 0){ busValue++; }
-                        else if (result == 1){ carValue++; }
-                        else if (result == 2){ motoValue++; }
-                        else if (result == 3){ walkValue++; }
-                        else if (result == 4){ trainValue++; }
+                        if (result == 0){ bikeValue++; }
+                        else if (result == 1){ scooterValue++; }
+                        else if (result == 2){ walkValue++; }
                         else {Log.i("error: ", "model result not listed\n");}
-
                     }
                 }
             }
@@ -297,7 +290,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private void showResults() {
         TextView tv = findViewById(R.id.tvResults);
         StringBuilder sb = new StringBuilder();
-        sb.append("Bus: " + busValue + " Car: " + carValue + " Train: " + trainValue + "Walk: " + walkValue + "Moto: " + motoValue);
+        sb.append("Bike: " + bikeValue + " Scooter: " + scooterValue + " Walk: " + walkValue);
         tv.setText(sb.toString());
     }
 

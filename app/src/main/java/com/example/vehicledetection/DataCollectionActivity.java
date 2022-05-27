@@ -32,12 +32,9 @@ import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
-    private static final int RECORDS_SEC = 50;
-    private static final int BUS = 0;
-    private static final int CAR = 1;
-    private static final int MOTO = 2;
-    private static final int WALK = 3;
-    private static final int TRAIN = 4;
+    private static final int BIKE = 0;
+    private static final int WALK = 2;
+    private static final int SCOOTER = 1;
 
     private Sensor sAcceleration;
     private SensorManager sm;
@@ -99,16 +96,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             if (v.getId() == R.id.recordButton) {
                 overlappingBar.setEnabled(false);
                 startRecording();
-            } else if (v.getId() == R.id.busButton) {
-                removeButtonBorder();
-                Button b = v.findViewById(R.id.busButton);
-                b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
-                currentVehicle = BUS;
             } else if (v.getId() == R.id.carButton) {
                 removeButtonBorder();
                 Button b = v.findViewById(R.id.carButton);
                 b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
-                currentVehicle = CAR;
+                currentVehicle = BIKE;
             } else if (v.getId() == R.id.walkButton) {
                 removeButtonBorder();
                 Button b = v.findViewById(R.id.walkButton);
@@ -118,12 +110,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                 removeButtonBorder();
                 Button b = v.findViewById(R.id.trainButton);
                 b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
-                currentVehicle = TRAIN;
-            } else if (v.getId() == R.id.motoButton) {
-                removeButtonBorder();
-                Button b = v.findViewById(R.id.motoButton);
-                b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
-                currentVehicle = MOTO;
+                currentVehicle = SCOOTER;
             } else if (v.getId() == R.id.removeFiles) {
                 File directory = new File(c.getFilesDir().getPath());
                 for (File file : Objects.requireNonNull(directory.listFiles())) {
@@ -303,11 +290,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     public void removeButtonBorder() {
-        Button b = findViewById(R.id.motoButton);
-        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
-        b = findViewById(R.id.busButton);
-        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
-        b = findViewById(R.id.carButton);
+        Button b = findViewById(R.id.carButton);
         b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
         b = findViewById(R.id.walkButton);
         b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));

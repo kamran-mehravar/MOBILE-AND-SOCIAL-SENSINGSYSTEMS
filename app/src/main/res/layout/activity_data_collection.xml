@@ -67,25 +67,25 @@
                 android:layout_marginRight="10dp"
                 android:width="115dp"
                 android:onClick="onClick"
-                android:text="Car"
+                android:text="Bike"
                 android:textSize="12sp" />
 
             <Button
-                android:id="@+id/busButton"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
-                android:width="115dp"
-                android:onClick="onClick"
-                android:text="Bus"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/motoButton"
-                android:layout_marginLeft="10dp"
+                android:id="@+id/trainButton"
+                android:layout_marginLeft="7dp"
                 android:layout_marginRight="15dp"
                 android:width="115dp"
                 android:onClick="onClick"
-                android:text="Moto"
+                android:text="Scooter"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/walkButton"
+                android:layout_marginLeft="15dp"
+                android:layout_marginRight="7dp"
+                android:width="115dp"
+                android:onClick="onClick"
+                android:text="Walk"
                 android:textSize="12sp" />
 
         </TableRow>
@@ -98,23 +98,6 @@
             android:paddingTop="5dp">
 
 
-            <Button
-                android:id="@+id/walkButton"
-                android:layout_marginLeft="15dp"
-                android:layout_marginRight="7dp"
-                android:width="115dp"
-                android:onClick="onClick"
-                android:text="Walk"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/trainButton"
-                android:layout_marginLeft="7dp"
-                android:layout_marginRight="15dp"
-                android:width="115dp"
-                android:onClick="onClick"
-                android:text="Train"
-                android:textSize="12sp" />
         </TableRow>
 
     </TableLayout>
