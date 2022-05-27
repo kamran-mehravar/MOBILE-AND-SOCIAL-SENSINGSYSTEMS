@@ -180,6 +180,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                 stopMonitoring();
             }
         } catch (Exception e) {
+            stopMonitoring();
             Log.i("fail", "", e);
         }
 
@@ -258,14 +259,14 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         String line;
         try (BufferedReader reader = new BufferedReader(new FileReader(dataFilePath))) {
             line = reader.readLine();
-            String[] keys = line.split(",", SAMPLE_SIZE*3);
+            String[] keys = line.split(",", (SAMPLE_SIZE/2)*3);
             Log.i("keys: ", line + "\n");
             for (int n=0 ; n<MONITORING_REPETITIONS; n++) { // iterate over number of monitoring windows captured (equal to the number of lines)
                 if ((line = reader.readLine()) != null) {
-                    String[] values = line.split(",", SAMPLE_SIZE*3);
+                    String[] values = line.split(",", (SAMPLE_SIZE/2)*3);
                     /** Write sample data in the map **/
                     if (values.length > 1 && keys.length > 1){
-                        for (int i=0; i<SAMPLE_SIZE*3; i++){
+                        for (int i=0; i<(SAMPLE_SIZE/2)*3; i++){
                             arguments.put(keys[i], values[i]);
                         }
                         /** get Inference value from the model **/
