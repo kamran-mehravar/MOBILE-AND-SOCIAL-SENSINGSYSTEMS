@@ -304,6 +304,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
 
     private void initPlot() {
         plot = (XYPlot) findViewById(R.id.plot);
+        plot.setVisibility(View.INVISIBLE);
         plot.setUserRangeOrigin(0);
         plot.setRangeBoundaries(0, 7, BoundaryMode.FIXED);
         plot.setDomainBoundaries(0, 3,BoundaryMode.FIXED);
