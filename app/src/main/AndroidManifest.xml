@@ -10,9 +10,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VehicleDetection">
         <activity
-            android:name=".MachineLearningActivity"
-            android:exported="false" />
-        <activity
             android:name=".MonitorActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

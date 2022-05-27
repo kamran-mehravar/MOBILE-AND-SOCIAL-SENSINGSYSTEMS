@@ -25,9 +25,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else if(v.getId() == R.id.monitorButton) {
             Intent intent = new Intent(this, MonitorActivity.class);
             startActivity(intent);
-        } else if(v.getId() == R.id.machineLearningButton) {
-            Intent intent = new Intent(this, MachineLearningActivity.class);
-            startActivity(intent);
         } else {
             throw new NoSuchElementException();
         }

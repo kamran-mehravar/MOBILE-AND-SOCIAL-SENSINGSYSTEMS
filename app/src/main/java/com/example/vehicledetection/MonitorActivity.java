@@ -16,6 +16,7 @@ import android.hardware.SensorManager;
 import android.os.SystemClock;
 import android.util.Log;
 import android.widget.Chronometer;
+import android.widget.TextView;
 
 import com.androidplot.xy.BarFormatter;
 import com.androidplot.xy.BarRenderer;
@@ -282,13 +283,22 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                         else if (result == 3){ walkValue++; }
                         else if (result == 4){ trainValue++; }
                         else {Log.i("error: ", "model result not listed\n");}
+
                     }
                 }
             }
+            showResults();
         } catch (IOException e) {
             e.printStackTrace();
             Log.d("Fail to Read file in inference map", "");
         }
+    }
+
+    private void showResults() {
+        TextView tv = findViewById(R.id.tvResults);
+        StringBuilder sb = new StringBuilder();
+        sb.append("Bus: " + busValue + " Car: " + carValue + " Train: " + trainValue + "Walk: " + walkValue + "Moto: " + motoValue);
+        tv.setText(sb.toString());
     }
 
 

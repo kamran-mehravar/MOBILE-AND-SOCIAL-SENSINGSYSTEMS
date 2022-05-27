@@ -20,6 +20,13 @@
             android:layout_width="300dp"
             android:layout_height="546dp" />
 
+        <TextView
+            android:id="@+id/tvResults"
+            android:layout_width="match_parent"
+            android:textAlignment="center"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
         <Chronometer
             android:id="@+id/monitoringChronometer"
             android:layout_width="41dp"
