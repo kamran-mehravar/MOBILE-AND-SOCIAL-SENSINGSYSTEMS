@@ -2,6 +2,7 @@ package com.example.vehicledetection;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
@@ -306,18 +307,40 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private void showResults() {
         TextView tv = findViewById(R.id.tvResults);
         tv.setText("Bike: " + bikeValue + " Scooter: " + scooterValue + " Walk: " + walkValue);
-        XYSeries s1 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bike", 1, bikeValue);
+        XYSeries s1 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bike", 0.95, bikeValue);
         plot.addSeries(s1, new BarFormatter(Color.GREEN, Color.BLACK));
-        XYSeries s2 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Run", 2, runValue);
+        XYSeries s2 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Scooter", 1.7, 4);
         plot.addSeries(s2, new BarFormatter(Color.RED, Color.BLACK));
-        XYSeries s3 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Walk", 3, walkValue);
+        XYSeries s3 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Walk", 2.45, 6);
         plot.addSeries(s3, new BarFormatter(Color.YELLOW, Color.BLACK));
-        XYSeries s4 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Scooter", 4, scooterValue);
+        XYSeries s4 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Run", 3.2, 5);
         plot.addSeries(s4, new BarFormatter(Color.BLUE, Color.BLACK));
-        XYSeries s5 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bus", 5, busValue);
+        XYSeries s5 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bus", 3.95, 3);
         plot.addSeries(s5, new BarFormatter(Color.WHITE, Color.BLACK));
         BarRenderer renderer = (BarRenderer) plot.getRenderer(BarRenderer.class);
-        renderer.setBarWidth(80);
+        float scale = getResources().getDisplayMetrics().density;
+        renderer.setBarWidth((int) (43*scale + 0.5f));
+        Log.i("Info", scale + "");
+        int constantHeight = (int) (764*scale + 0.5f);
+        int constantPadding = (int) (196*scale + 0.5f);
+        int variablePadding = 87;
+        TextView tv1 = findViewById(R.id.textViewBike);
+        tv1.setPadding((int) (69*scale + 0.5f),  constantHeight - constantPadding - (int) (2*variablePadding*scale + 0.5f), 0, 0);
+        tv1.setText("Bike");
+        TextView tv2 = findViewById(R.id.textViewScooter);
+        tv2.setPadding((int) (114*scale + 0.5f), constantHeight - constantPadding - (int) (4*variablePadding*scale + 0.5f), 0, 0);
+        tv2.setText("Scooter");
+        TextView tv3 = findViewById(R.id.textViewWalk);
+        tv3.setPadding((int) (181*scale + 0.5f), constantHeight - constantPadding - (int) (6*variablePadding*scale + 0.5f), 0, 0);
+        tv3.setText("Walk");
+        TextView tv4 = findViewById(R.id.textViewRun);
+        tv4.setPadding((int) (242*scale + 0.5f), constantHeight - constantPadding - (int) (5*variablePadding*scale + 0.5f), 0, 0);
+        tv4.setText("Run");
+        TextView tv5 = findViewById(R.id.textViewBus);
+        tv5.setPadding((int) (297*scale + 0.5f), constantHeight - constantPadding - (int) (3*variablePadding*scale + 0.5f), 0, 0);
+        tv5.setText("Bus");
+        plot.getLayoutManager().refreshLayout();
+        plot.redraw();
         plot.setVisibility(View.VISIBLE);
     }
 
@@ -329,7 +352,6 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
             plot = findViewById(R.id.plot);
             plot.setVisibility(View.INVISIBLE);
             plot.setUserRangeOrigin(0);
-            plot.setBackgroundColor(0x00000000);
             plot.setRangeBoundaries(0, 6, BoundaryMode.FIXED);
             plot.setDomainBoundaries(0, 5, BoundaryMode.FIXED);
             plot.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 1);
@@ -338,7 +360,9 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
             plot.getGraphWidget().getGridBackgroundPaint().setColor(Color.TRANSPARENT);
 
             Paint bgPaint = new Paint();
-            bgPaint.setColor(Color.BLACK);
+            int nightModeFlags = c.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) bgPaint.setColor(Color.parseColor("#121212"));
+            else bgPaint.setColor(Color.WHITE);
             bgPaint.setStyle(Paint.Style.FILL);
             bgPaint.setAlpha(255);
             plot.setBackgroundPaint(bgPaint);
@@ -356,18 +380,6 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
             Log.i("fail", "", e);
         }
     }
-
-    /**
-     * TextView tv1 = findViewById(R.id.textViewBus);
-     * tv1.setPadding(225 + 1 * 250,  2100 - 490 - (6 * 215), 0, 0);
-     * tv1.setText("BUS");
-     * TextView tv2 = findViewById(R.id.textViewCar);
-     * tv2.setPadding(225 + 2 * 250, 2100 - 490 - (4 * 215), 0, 0);
-     * tv2.setText("CAR");
-     * plot.getLayoutManager().refreshLayout();
-     * plot.redraw();
-     **/
-
 
     private double[][] getSampleWindows() {
         return this.mSampleWindows;
