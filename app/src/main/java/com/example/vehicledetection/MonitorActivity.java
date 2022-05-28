@@ -2,9 +2,9 @@ package com.example.vehicledetection;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.View;
 
@@ -21,7 +21,6 @@ import android.widget.TextView;
 import com.androidplot.xy.BarFormatter;
 import com.androidplot.xy.BarRenderer;
 import com.androidplot.xy.BoundaryMode;
-import com.androidplot.xy.PointLabelFormatter;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
@@ -30,10 +29,10 @@ import com.androidplot.xy.XYStepMode;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,10 +47,10 @@ import org.dmg.pmml.PMML;
 import org.jpmml.model.SerializationUtil;
 
 
-
 public class MonitorActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
 
-    private static final int MONITORING_REPETITIONS = 2; // collect data for 6 time windows (5s each)
+    // CONSTANT VALUES
+    private static final int MONITORING_REPETITIONS = 6; // collect data for 6 time windows (5s each)
     private static final int SAMPLE_SIZE = 256;
 
     private Sensor sAcceleration;
@@ -59,13 +58,15 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private boolean monitoringStatus = false;
     private Context c;
     private File inferenceTempFile;
-    private StringBuilder rawData, filteredData;
     private XYPlot plot;
 
     // Monitoring results
     private int bikeValue = 0;
     private int scooterValue = 0;
     private int walkValue = 0;
+    private int runValue = 0;
+    private int busValue = 0;
+
     private int monitoringCounter = 0;
     private Evaluator evaluator;
 
@@ -101,23 +102,23 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         // Start the FourierRunnable.
         (new Thread(this.getFourierRunnable())).start();
         /** Create Classifier from PMML file **/
-        try(FileInputStream is = new FileInputStream(c.getFilesDir() + "/model.pmml.ser")){
-            try {
-                PMML pmml = SerializationUtil.deserializePMML(is);
-                /** Build the model **/
-                ModelEvaluatorBuilder evaluatorBuilder = new ModelEvaluatorBuilder(pmml);
-                evaluator = evaluatorBuilder.build();
-                evaluator.verify();
-                Log.i("EVALUATOR:", "BUILT");
-                List<InputField> inputFields = evaluator.getInputFields();
-                Log.i("INPUT FIELDS:", inputFields.toString());
-                List<TargetField> targetFields = evaluator.getTargetFields();
-                Log.i("TARGET FIELDS:", targetFields.toString());
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        try {
+            AssetManager am = getAssets();
+            String[] a = am.list("");
+            InputStream is = getResources().getAssets().open("model.pmml.ser");
+            // FileInputStream is = new FileInputStream(c.getFilesDir() + "/model.pmml.ser");
+            PMML pmml = SerializationUtil.deserializePMML(is);
+            /** Build the model **/
+            ModelEvaluatorBuilder evaluatorBuilder = new ModelEvaluatorBuilder(pmml);
+            evaluator = evaluatorBuilder.build();
+            evaluator.verify();
+            Log.i("EVALUATOR:", "BUILT");
+            List<InputField> inputFields = evaluator.getInputFields();
+            Log.i("INPUT FIELDS:", inputFields.toString());
+            List<TargetField> targetFields = evaluator.getTargetFields();
+            Log.i("TARGET FIELDS:", targetFields.toString());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -126,12 +127,9 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
 
     @Override
     public void onClick(View v) {
-        if(v.getId() == R.id.startMonitoringButton) {
+        if (v.getId() == R.id.startMonitoringButton) {
             if (!monitoringStatus) {
                 startMonitoring();
-            }
-            else {
-                /** no action performed while monitoring **/
             }
         } else {
             throw new NoSuchElementException();
@@ -174,7 +172,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                 }
             }
 
-            if (monitoringCounter == MONITORING_REPETITIONS){
+            if (monitoringCounter == MONITORING_REPETITIONS) {
                 returnInference(inferenceTempFile.getAbsolutePath());
                 stopMonitoring();
             }
@@ -189,26 +187,23 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     public final void onFourierResult(final double[][] pResultBuffer) {
         // Linearize execution.
         try {
-            this.runOnUiThread(new Runnable() {
-                @Override
-                public final void run() {
-                    StringBuilder sbMagnitude = new StringBuilder();
-                    for (int i = 0; i < 3; i++) {
-                        final double[] lResult = pResultBuffer[i];
-                        for (int j = 0; j < lResult.length; j++) {
-                            if (j < SAMPLE_SIZE/2) {
-                                sbMagnitude.append(",").append(Math.pow(10, lResult[j]/20));
-                            }
+            this.runOnUiThread(() -> {
+                StringBuilder sbMagnitude = new StringBuilder();
+                for (int i = 0; i < 3; i++) {
+                    final double[] lResult = pResultBuffer[i];
+                    for (int j = 0; j < lResult.length; j++) {
+                        if (j < SAMPLE_SIZE / 2) {
+                            sbMagnitude.append(",").append(Math.pow(10, lResult[j] / 20));
                         }
-                        if (i == 2) {
-                            sbMagnitude.append("\n");
-                        }
-                        if (i == 0) {
-                            sbMagnitude.replace(0, 1, "");
-                        }
-                        DataWindow.writeOnFile(sbMagnitude.toString(), inferenceTempFile);
-                        sbMagnitude = new StringBuilder();
                     }
+                    if (i == 2) {
+                        sbMagnitude.append("\n");
+                    }
+                    if (i == 0) {
+                        sbMagnitude.replace(0, 1, "");
+                    }
+                    DataWindow.writeOnFile(sbMagnitude.toString(), inferenceTempFile);
+                    sbMagnitude = new StringBuilder();
                 }
             });
         } catch (Exception e) {
@@ -221,8 +216,6 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         inferenceTempFile = DataWindow.initTempFiles("temp_sample_data", c.getFilesDir(), true);
         sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); // SENSOR_DELAY_GAME: 20ms sample interval
         monitoringStatus = true;
-        filteredData = new StringBuilder();
-        rawData = new StringBuilder();
         timeRecorded.setBase(SystemClock.elapsedRealtime());
         timeRecorded.start();
         monitoringCounter = 0;
@@ -237,11 +230,12 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         monitoringStatus = false;
         focus.setBase(SystemClock.elapsedRealtime());
         focus.stop();
-        //inferenceTempFile.delete();
+        inferenceTempFile.delete();
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int i) { }
+    public void onAccuracyChanged(Sensor sensor, int i) {
+    }
 
     public void setSensors() {
         sm = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -250,20 +244,20 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
 
 
     private void returnInference(String dataFilePath) {
-        int result = 10; // not recognizable value
+        int result; // not recognizable value
         /** Read arguments from File and execute the model **/
         HashMap<String, String> arguments = new HashMap<>(); // create a map for the argument values
         String line;
         try (BufferedReader reader = new BufferedReader(new FileReader(dataFilePath))) {
             line = reader.readLine();
-            String[] keys = line.split(",", (SAMPLE_SIZE/2)*3);
+            String[] keys = line.split(",", (SAMPLE_SIZE / 2) * 3);
             Log.i("keys: ", line + "\n");
-            for (int n=0 ; n<MONITORING_REPETITIONS; n++) { // iterate over number of monitoring windows captured (equal to the number of lines)
+            for (int n = 0; n < MONITORING_REPETITIONS; n++) { // iterate over number of monitoring windows captured (equal to the number of lines)
                 if ((line = reader.readLine()) != null) {
-                    String[] values = line.split(",", (SAMPLE_SIZE/2)*3);
+                    String[] values = line.split(",", (SAMPLE_SIZE / 2) * 3);
                     /** Write sample data in the map **/
-                    if (values.length > 1 && keys.length > 1){
-                        for (int i=0; i<(SAMPLE_SIZE/2)*3; i++){
+                    if (values.length > 1 && keys.length > 1) {
+                        for (int i = 0; i < (SAMPLE_SIZE / 2) * 3; i++) {
                             arguments.put(keys[i], values[i]);
                         }
                         /** get Inference value from the model **/
@@ -273,10 +267,14 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                         Log.i("RESULTS: ", results.toString());
                         arguments.clear();
                         result = (int) results.get("y");
-                        if (result == 0){ bikeValue++; }
-                        else if (result == 1){ scooterValue++; }
-                        else if (result == 2){ walkValue++; }
-                        else {Log.i("error: ", "model result not listed\n");}
+                        if (result == 0) bikeValue++;
+                        else if (result == 1) scooterValue++;
+                        else if (result == 2) walkValue++;
+                        else if (result == 3) runValue++;
+                        else if (result == 4) busValue++;
+                        else {
+                            Log.i("error: ", "model result not listed\n");
+                        }
                     }
                 }
             }
@@ -290,67 +288,77 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private void showResults() {
         TextView tv = findViewById(R.id.tvResults);
         StringBuilder sb = new StringBuilder();
-        sb.append("Bike: " + bikeValue + " Scooter: " + scooterValue + " Walk: " + walkValue);
+        sb.append("Bike: ").append(bikeValue).append(" Scooter: ").append(scooterValue).append(" Walk: ").append(walkValue);
         tv.setText(sb.toString());
+        XYSeries s1 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bike", 1, bikeValue);
+        plot.addSeries(s1, new BarFormatter(Color.GREEN, Color.BLACK));
+        XYSeries s2 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Run", 2, runValue);
+        plot.addSeries(s2, new BarFormatter(Color.RED, Color.BLACK));
+        XYSeries s3 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Walk", 3, walkValue);
+        plot.addSeries(s3, new BarFormatter(Color.YELLOW, Color.BLACK));
+        XYSeries s4 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Scooter", 4, scooterValue);
+        plot.addSeries(s4, new BarFormatter(Color.BLUE, Color.BLACK));
+        XYSeries s5 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bus", 5, busValue);
+        plot.addSeries(s5, new BarFormatter(Color.WHITE, Color.BLACK));
+        BarRenderer renderer = (BarRenderer) plot.getRenderer(BarRenderer.class);
+        renderer.setBarWidth(80);
+        plot.setVisibility(View.VISIBLE);
     }
 
 
     private void initPlot() {
-        plot = (XYPlot) findViewById(R.id.plot);
-        plot.setVisibility(View.INVISIBLE);
-        plot.setUserRangeOrigin(0);
-        plot.setRangeBoundaries(0, 7, BoundaryMode.FIXED);
-        plot.setDomainBoundaries(0, 3,BoundaryMode.FIXED);
-        plot.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 1);
-        XYSeries s1 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bus", 1, 6);
-        plot.addSeries(s1, new BarFormatter(Color.GREEN, Color.BLACK));
-        XYSeries s2 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Car", 2, 4);
-        BarFormatter bf1 = new BarFormatter(Color.RED, Color.BLACK);
-        bf1.setPointLabelFormatter(new PointLabelFormatter(Color.WHITE));
-        plot.addSeries(s2, bf1);
-        BarRenderer renderer = (BarRenderer) plot.getRenderer(BarRenderer.class);
-        renderer.setBarWidth(80);
-        plot.getGraphWidget().getBackgroundPaint().setColor(Color.TRANSPARENT);
-        plot.getGraphWidget().getGridBackgroundPaint().setColor(Color.TRANSPARENT);
+        try {
+            plot = findViewById(R.id.plot);
+            plot.setVisibility(View.INVISIBLE);
+            plot.setUserRangeOrigin(0);
+            plot.setRangeBoundaries(0, 6, BoundaryMode.FIXED);
+            plot.setDomainBoundaries(0, 5, BoundaryMode.FIXED);
+            plot.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 1);
 
-        Paint bgPaint = new Paint();
-        bgPaint.setColor(Color.BLACK);
-        bgPaint.setStyle(Paint.Style.FILL);
-        bgPaint.setAlpha(255);
-        plot.setBackgroundPaint(bgPaint);
-        plot.getGraphWidget().setDomainGridLinePaint(null);
-        plot.getGraphWidget().setRangeGridLinePaint(null);
-        plot.getBorderPaint().setColor(Color.TRANSPARENT);
+            plot.getGraphWidget().getBackgroundPaint().setColor(Color.TRANSPARENT);
+            plot.getGraphWidget().getGridBackgroundPaint().setColor(Color.TRANSPARENT);
 
-        plot.getLayoutManager().remove(
-                plot.getDomainLabelWidget());
+            Paint bgPaint = new Paint();
+            bgPaint.setColor(Color.BLACK);
+            bgPaint.setStyle(Paint.Style.FILL);
+            bgPaint.setAlpha(255);
+            plot.setBackgroundPaint(bgPaint);
+            plot.getGraphWidget().setDomainGridLinePaint(null);
+            plot.getGraphWidget().setRangeGridLinePaint(null);
+            plot.getBorderPaint().setColor(Color.TRANSPARENT);
 
-        plot.getGraphWidget().setDomainOriginLinePaint(null);
-        plot.getGraphWidget().setRangeOriginLinePaint(null);
-        s1.getX(0);
-        Rect bounds = new Rect();
-        bounds.height(); //This should give you the height of the wrapped_content
-/**
-        TextView tv1 = findViewById(R.id.textViewBus);
-        tv1.setPadding(225 + 1 * 250,  2100 - 490 - (6 * 215), 0, 0);
-        tv1.setText("BUS");
-        TextView tv2 = findViewById(R.id.textViewCar);
-        tv2.setPadding(225 + 2 * 250, 2100 - 490 - (4 * 215), 0, 0);
-        tv2.setText("CAR");
-        plot.getLayoutManager().refreshLayout();
-        plot.redraw();
-**/
+            plot.getLayoutManager().remove(
+                    plot.getDomainLabelWidget());
+
+            plot.getGraphWidget().setDomainOriginLinePaint(null);
+            plot.getGraphWidget().setRangeOriginLinePaint(null);
+            plot.getGraphWidget().setRangeOriginLinePaint(null);
+        } catch (Exception e) {
+            Log.i("fail", "", e);
+        }
     }
+
+/**
+ TextView tv1 = findViewById(R.id.textViewBus);
+ tv1.setPadding(225 + 1 * 250,  2100 - 490 - (6 * 215), 0, 0);
+ tv1.setText("BUS");
+ TextView tv2 = findViewById(R.id.textViewCar);
+ tv2.setPadding(225 + 2 * 250, 2100 - 490 - (4 * 215), 0, 0);
+ tv2.setText("CAR");
+ plot.getLayoutManager().refreshLayout();
+ plot.redraw();
+ **/
+
 
     private double[][] getSampleWindows() {
         return this.mSampleWindows;
     }
 
-    private final double[][] getDecoupler() {
+    private double[][] getDecoupler() {
         return this.mDecoupler;
     }
 
-    private final MonitorActivity.FourierRunnable getFourierRunnable() {
+    private MonitorActivity.FourierRunnable getFourierRunnable() {
         return this.mFourierRunnable;
     }
 
@@ -365,7 +373,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private final class FourierRunnable implements Runnable {
         /* Member Variables. */
         private final double[][] mSampleBuffer;
-        private double[][] mResultBuffer;
+        private final double[][] mResultBuffer;
         private boolean mReady;
 
         /**
@@ -410,15 +418,15 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         }
 
         /* Getters. */
-        private final double[][] getSampleBuffer() {
+        private double[][] getSampleBuffer() {
             return this.mSampleBuffer;
         }
 
-        private final double[][] getResultBuffer() {
+        private double[][] getResultBuffer() {
             return this.mResultBuffer;
         }
 
-        private final void setReady(final boolean pIsReady) {
+        private void setReady(final boolean pIsReady) {
             this.mReady = pIsReady;
         }
 
