@@ -134,6 +134,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
+    /**
+     * Announce a event regarding to collection on a text view
+     * @param data string to saw
+     */
     private void announceEvent(String data) {
         TextView tv = findViewById(R.id.infoMessageTV);
         tv.setText(data);
@@ -183,6 +187,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
+    /**
+     * Mix data collected on current window with overlapped data
+     * @param pResultBuffer current window data
+     * @return mixed data
+     */
     private double[][] getFinalResultBuffer(double[][] pResultBuffer) {
         double[][] finalResult = new double[3][MAX_TESTS_NUM];
         if (firstRecord) {
@@ -197,7 +206,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         return finalResult;
     }
 
-    // FFT
+    /**
+     * Write FFT data onto a file and write overlapped data results onto another array
+     * @param pResultBuffer
+     */
     public final void onFourierResult(final double[][] pResultBuffer) {
         // Linearize execution.
         try {
@@ -247,6 +259,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         return this.mOffset;
     }
 
+    /**
+     * Start getting data from accelerometer
+     */
     private void startRecording() {
         try {
             Chronometer timeRecorded = findViewById(R.id.chronometer1);
@@ -263,6 +278,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
+    /**
+     * Stop getting data from the accelerometer
+     */
     private void stopRecording() {
         Chronometer focus = findViewById(R.id.chronometer1);
         sm.unregisterListener(this, sAcceleration);
@@ -280,12 +298,17 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         sAcceleration = sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
     }
 
-    @SuppressLint("NewApi")
+    /**
+     * Init seekbar listener
+     */
     public void initListeners() {
         overlapBar = findViewById(R.id.overlappingBar);
         overlapBar.setOnSeekBarChangeListener(this);
     }
 
+    /**
+     * Set buttons visual like on create
+     */
     public void setDefaultButtons() {
         Button b = findViewById(R.id.bikeButton);
         b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
@@ -299,6 +322,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
     }
 
+    /**
+     * Compute a random UUID for a window record of integer 128 bits
+     * @return value
+     */
     private static long computeUUID() {
         long uuid;
         do {
@@ -317,6 +344,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         }
     }
 
+    /**
+     * Simple method to have the step value on 25 on a seek bar
+     * @param overlapProgress
+     */
     private void manageBarProgress(int overlapProgress) {
         this.overlapProgress = overlapProgress / 25;
         this.overlapProgress = this.overlapProgress * 25;

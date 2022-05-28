@@ -123,12 +123,14 @@
             android:id="@+id/runButton"
             android:layout_width="304dp"
             android:layout_height="53dp"
+            android:onClick="onClick"
             android:text="Run" />
 
         <Button
             android:id="@+id/busButton"
             android:layout_width="304dp"
             android:layout_height="53dp"
+            android:onClick="onClick"
             android:text="Bus" />
     </LinearLayout>
 

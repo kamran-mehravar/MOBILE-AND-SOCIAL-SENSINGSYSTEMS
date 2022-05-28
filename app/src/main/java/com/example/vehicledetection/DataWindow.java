@@ -12,6 +12,12 @@ public class DataWindow {
 
     private static final int MAX_TESTS_NUM = 256;
 
+    /**
+     * Do mathematical computations from accelerometer data into FFT data.
+     * @param sampleBuffer accelerometer data
+     * @param resultBuffer FFT transformed data
+     * @return FFT data
+     */
     public static double[][] computeFFT(double[][] sampleBuffer, double[][] resultBuffer) {
         // Declare the SampleBuffer.
         final double[] lFFT = new double[MAX_TESTS_NUM * 2];
@@ -40,6 +46,11 @@ public class DataWindow {
         return resultBuffer;
     }
 
+    /**
+     * Write text into a file
+     * @param data string to write into the file
+     * @param file file to write the string
+     */
     public static void writeOnFile(String data, File file) {
         try {
             FileWriter fw = new FileWriter(file, true);
@@ -50,6 +61,13 @@ public class DataWindow {
         }
     }
 
+    /**
+     * Init a new file (data collection or monitor data)
+     * @param fileName
+     * @param path
+     * @param isInference if is monitor file need to have other init
+     * @return the new file
+     */
     public static File initTempFiles(String fileName, File path, boolean isInference) {
         File f = new File(path, fileName + ".csv");
         if (!f.exists()) {

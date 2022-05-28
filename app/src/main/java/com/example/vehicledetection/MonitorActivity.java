@@ -2,7 +2,6 @@ package com.example.vehicledetection;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
@@ -29,7 +28,6 @@ import com.androidplot.xy.XYStepMode;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 
 import java.io.InputStream;
@@ -50,7 +48,7 @@ import org.jpmml.model.SerializationUtil;
 public class MonitorActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
 
     // CONSTANT VALUES
-    private static final int MONITORING_REPETITIONS = 6; // collect data for 6 time windows (5s each)
+    private static final int MONITORING_REPETITIONS = 2; // collect data for 6 time windows (5s each)
     private static final int SAMPLE_SIZE = 256;
 
     private Sensor sAcceleration;
@@ -101,14 +99,18 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         // Initialize the Timestamp.;
         // Start the FourierRunnable.
         (new Thread(this.getFourierRunnable())).start();
-        /** Create Classifier from PMML file **/
+        createClassifier();
+
+
+    }
+
+    /**
+     * Create ML classifier
+     */
+    private void createClassifier() {
         try {
-            AssetManager am = getAssets();
-            String[] a = am.list("");
             InputStream is = getResources().getAssets().open("model.pmml.ser");
-            // FileInputStream is = new FileInputStream(c.getFilesDir() + "/model.pmml.ser");
             PMML pmml = SerializationUtil.deserializePMML(is);
-            /** Build the model **/
             ModelEvaluatorBuilder evaluatorBuilder = new ModelEvaluatorBuilder(pmml);
             evaluator = evaluatorBuilder.build();
             evaluator.verify();
@@ -117,13 +119,10 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
             Log.i("INPUT FIELDS:", inputFields.toString());
             List<TargetField> targetFields = evaluator.getTargetFields();
             Log.i("TARGET FIELDS:", targetFields.toString());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
     }
-
 
     @Override
     public void onClick(View v) {
@@ -168,68 +167,77 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                     // Reset the Offset.
                     this.monitoringCounter++;
                     this.setOffset(0);
+                    if (monitoringCounter == MONITORING_REPETITIONS) {
+                        stopMonitoring();
+                    }
                     // Re-initialize the Timestamp.;
                 }
             }
-
-            if (monitoringCounter == MONITORING_REPETITIONS) {
-                returnInference(inferenceTempFile.getAbsolutePath());
-                stopMonitoring();
-            }
         } catch (Exception e) {
-            stopMonitoring();
             Log.i("fail", "", e);
         }
-
     }
 
-    // FFT
+    /**
+     * Write fft data into a file
+     *
+     * @param pResultBuffer fft data
+     */
     public final void onFourierResult(final double[][] pResultBuffer) {
         // Linearize execution.
-        try {
-            this.runOnUiThread(() -> {
-                StringBuilder sbMagnitude = new StringBuilder();
-                for (int i = 0; i < 3; i++) {
-                    final double[] lResult = pResultBuffer[i];
-                    for (int j = 0; j < lResult.length; j++) {
-                        if (j < SAMPLE_SIZE / 2) {
-                            sbMagnitude.append(",").append(Math.pow(10, lResult[j] / 20));
-                        }
-                    }
-                    if (i == 2) {
-                        sbMagnitude.append("\n");
-                    }
-                    if (i == 0) {
-                        sbMagnitude.replace(0, 1, "");
-                    }
-                    DataWindow.writeOnFile(sbMagnitude.toString(), inferenceTempFile);
-                    sbMagnitude = new StringBuilder();
+        StringBuilder sbMagnitude = new StringBuilder();
+        for (int i = 0; i < 3; i++) {
+            final double[] lResult = pResultBuffer[i];
+            for (int j = 0; j < lResult.length; j++) {
+                if (j < SAMPLE_SIZE / 2) {
+                    sbMagnitude.append(",").append(Math.pow(10, lResult[j] / 20));
                 }
-            });
-        } catch (Exception e) {
-            Log.i("fail", "", e);
+            }
+            if (i == 2) {
+                sbMagnitude.append("\n");
+            }
+            if (i == 0) {
+                sbMagnitude.replace(0, 1, "");
+            }
+            DataWindow.writeOnFile(sbMagnitude.toString(), inferenceTempFile);
+            sbMagnitude = new StringBuilder();
         }
     }
 
+    /**
+     * Start to get data from accelerometer
+     */
     private void startMonitoring() {
-        Chronometer timeRecorded = findViewById(R.id.monitoringChronometer);
-        inferenceTempFile = DataWindow.initTempFiles("temp_sample_data", c.getFilesDir(), true);
-        sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); // SENSOR_DELAY_GAME: 20ms sample interval
-        monitoringStatus = true;
-        timeRecorded.setBase(SystemClock.elapsedRealtime());
-        timeRecorded.start();
-        monitoringCounter = 0;
-        scooterValue = 0;
-        bikeValue = 0;
-        walkValue = 0;
+        try {
+            Chronometer timeRecorded = findViewById(R.id.monitoringChronometer);
+            inferenceTempFile = DataWindow.initTempFiles("temp_sample_data", c.getFilesDir(), true);
+            sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); // SENSOR_DELAY_GAME: 20ms sample interval
+            monitoringStatus = true;
+            timeRecorded.setBase(SystemClock.elapsedRealtime());
+            timeRecorded.start();
+            monitoringCounter = 0;
+            scooterValue = 0;
+            bikeValue = 0;
+            walkValue = 0;
+            busValue = 0;
+            runValue = 0;
+        } catch (Exception e) {
+            Log.i("fail", "", e);
+        }
+
     }
 
+    /**
+     * Stop getting data from accelerometer and start computing results
+     */
     private void stopMonitoring() {
         Chronometer focus = findViewById(R.id.monitoringChronometer);
         sm.unregisterListener(this, sAcceleration);
         monitoringStatus = false;
         focus.setBase(SystemClock.elapsedRealtime());
         focus.stop();
+        returnInference(inferenceTempFile);
+        showResults();
         inferenceTempFile.delete();
     }
 
@@ -237,30 +245,38 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     public void onAccuracyChanged(Sensor sensor, int i) {
     }
 
+    /**
+     * Initialize sensor manager and accelerometer objects
+     */
     public void setSensors() {
         sm = (SensorManager) getSystemService(SENSOR_SERVICE);
         sAcceleration = sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
     }
 
-
-    private void returnInference(String dataFilePath) {
+    /**
+     * Get the expected activity from data recorded
+     *
+     * @param f file where data is taken
+     */
+    public void returnInference(File f) {
         int result; // not recognizable value
-        /** Read arguments from File and execute the model **/
+        // Read arguments from File and execute the model
         HashMap<String, String> arguments = new HashMap<>(); // create a map for the argument values
         String line;
-        try (BufferedReader reader = new BufferedReader(new FileReader(dataFilePath))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
             line = reader.readLine();
             String[] keys = line.split(",", (SAMPLE_SIZE / 2) * 3);
             Log.i("keys: ", line + "\n");
             for (int n = 0; n < MONITORING_REPETITIONS; n++) { // iterate over number of monitoring windows captured (equal to the number of lines)
                 if ((line = reader.readLine()) != null) {
                     String[] values = line.split(",", (SAMPLE_SIZE / 2) * 3);
-                    /** Write sample data in the map **/
+                    // Write sample data in the map
                     if (values.length > 1 && keys.length > 1) {
+                        Log.i("fail", values.length + " " + keys.length);
                         for (int i = 0; i < (SAMPLE_SIZE / 2) * 3; i++) {
                             arguments.put(keys[i], values[i]);
                         }
-                        /** get Inference value from the model **/
+                        // get Inference value from the model
                         Log.i("Arguments Map: ", arguments.toString());
                         Map<String, ?> results = evaluator.evaluate(arguments);
                         results = EvaluatorUtil.decodeAll(results);
@@ -278,18 +294,18 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                     }
                 }
             }
-            showResults();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            Log.d("Fail to Read file in inference map", "");
+            Log.d("Fail to Read file in inference map", "", e);
         }
     }
 
+    /**
+     * Show the results computed by machine learning
+     */
     private void showResults() {
         TextView tv = findViewById(R.id.tvResults);
-        StringBuilder sb = new StringBuilder();
-        sb.append("Bike: ").append(bikeValue).append(" Scooter: ").append(scooterValue).append(" Walk: ").append(walkValue);
-        tv.setText(sb.toString());
+        tv.setText("Bike: " + bikeValue + " Scooter: " + scooterValue + " Walk: " + walkValue);
         XYSeries s1 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bike", 1, bikeValue);
         plot.addSeries(s1, new BarFormatter(Color.GREEN, Color.BLACK));
         XYSeries s2 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Run", 2, runValue);
@@ -305,12 +321,15 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         plot.setVisibility(View.VISIBLE);
     }
 
-
+    /**
+     * Start default characteristics of the plot used to show results
+     */
     private void initPlot() {
         try {
             plot = findViewById(R.id.plot);
             plot.setVisibility(View.INVISIBLE);
             plot.setUserRangeOrigin(0);
+            plot.setBackgroundColor(0x00000000);
             plot.setRangeBoundaries(0, 6, BoundaryMode.FIXED);
             plot.setDomainBoundaries(0, 5, BoundaryMode.FIXED);
             plot.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 1);
@@ -338,16 +357,16 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         }
     }
 
-/**
- TextView tv1 = findViewById(R.id.textViewBus);
- tv1.setPadding(225 + 1 * 250,  2100 - 490 - (6 * 215), 0, 0);
- tv1.setText("BUS");
- TextView tv2 = findViewById(R.id.textViewCar);
- tv2.setPadding(225 + 2 * 250, 2100 - 490 - (4 * 215), 0, 0);
- tv2.setText("CAR");
- plot.getLayoutManager().refreshLayout();
- plot.redraw();
- **/
+    /**
+     * TextView tv1 = findViewById(R.id.textViewBus);
+     * tv1.setPadding(225 + 1 * 250,  2100 - 490 - (6 * 215), 0, 0);
+     * tv1.setText("BUS");
+     * TextView tv2 = findViewById(R.id.textViewCar);
+     * tv2.setPadding(225 + 2 * 250, 2100 - 490 - (4 * 215), 0, 0);
+     * tv2.setText("CAR");
+     * plot.getLayoutManager().refreshLayout();
+     * plot.redraw();
+     **/
 
 
     private double[][] getSampleWindows() {
@@ -370,6 +389,9 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         return this.mOffset;
     }
 
+    /**
+     * Compute FFT from data recorded on each window of the accelerometer
+     */
     private final class FourierRunnable implements Runnable {
         /* Member Variables. */
         private final double[][] mSampleBuffer;
