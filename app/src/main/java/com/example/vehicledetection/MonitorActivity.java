@@ -51,7 +51,7 @@ import org.jpmml.model.SerializationUtil;
 public class MonitorActivity extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
 
     // CONSTANT VALUES
-    private static final int MONITORING_REPETITIONS = 6; // collect data for 6 time windows (5s each)
+    private static final int MONITORING_REPETITIONS = 2; // collect data for 6 time windows (5s each)
     private static final int SAMPLE_SIZE = 256;
     private static final double SAMPLE_MIN_THRESHOLD = 0.3; // if the sample collected has a maximum value lower than the threshold it tis discarded
 
@@ -238,8 +238,6 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         focus.setBase(SystemClock.elapsedRealtime());
         focus.stop();
         returnInference(inferenceTempFile);
-        showResults();
-        inferenceTempFile.delete();
     }
 
     @Override
@@ -307,6 +305,8 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                     }
                 }
             }
+            showResults();
+            inferenceTempFile.delete();
         } catch (Exception e) {
             e.printStackTrace();
             Log.d("Fail to Read file in inference map", "", e);
