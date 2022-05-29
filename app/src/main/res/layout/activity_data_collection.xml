@@ -36,7 +36,7 @@
             android:inputType="time"
             android:padding="10dp"
             android:text="Chronometer"
-            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:textStyle="bold"
             android:textSize="96sp"
             tools:ignore="EditableContentDescCheck" />
 
@@ -132,7 +132,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="30dp">
+            android:padding="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -168,13 +168,13 @@
             <SeekBar
                 android:id="@+id/overlappingBar"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
                 android:max="75"
                 android:padding="25dp"
                 android:progress="0"
-                android:progressTint="@color/black"
+                android:progressTint="@color/purple_700"
                 android:thumb="@drawable/custom_thumb"
                 android:thumbTint="@color/black" />
         </LinearLayout>

@@ -6,14 +6,12 @@ import androidx.core.content.ContextCompat;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Chronometer;
@@ -304,11 +302,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
      */
     public void setDefaultButtons() {
         int nightModeFlags = c.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        findViewById(R.id.bikeButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
-        findViewById(R.id.walkButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
-        findViewById(R.id.scooterButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
-        findViewById(R.id.runButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
-        findViewById(R.id.busButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
+        findViewById(R.id.bikeButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.teal_700, null) : this.getResources().getColor(R.color.teal_700, null));
+        findViewById(R.id.walkButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.teal_700, null) : this.getResources().getColor(R.color.teal_700, null));
+        findViewById(R.id.scooterButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.teal_700, null) : this.getResources().getColor(R.color.teal_700, null));
+        findViewById(R.id.runButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.teal_700, null) : this.getResources().getColor(R.color.teal_700, null));
+        findViewById(R.id.busButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.teal_700, null) : this.getResources().getColor(R.color.teal_700, null));
     }
 
     /**
