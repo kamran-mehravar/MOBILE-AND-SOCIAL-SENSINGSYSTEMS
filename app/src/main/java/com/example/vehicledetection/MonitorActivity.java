@@ -266,7 +266,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         String line;
         try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
             line = reader.readLine();
-            String[] keys = line.split(",", (SAMPLE_SIZE / 2)); // keys are only mx0 to mx127 - the values from y and z axis are added to the x axis values
+            String[] keys = line.split(","); // keys are only mx0 to mx127 - the values from y and z axis are added to the x axis values
             Log.i("keys: ", line + "\n");
             for (int n = 0; n < MONITORING_REPETITIONS; n++) { // iterate over number of monitoring windows captured (equal to the number of lines)
                 if ((line = reader.readLine()) != null) {
@@ -283,7 +283,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
                         if (max_sample_value > SAMPLE_MIN_THRESHOLD) {
                             for (int i = 0; i < (SAMPLE_SIZE / 2); i++) {
                                 double normal_value = combined_values[i]/max_sample_value; // normalize the sample input
-                                arguments.put(keys[i], normal_value+"");
+                                arguments.put(keys[i], Double.toString(normal_value));
                             }
                             // get Inference value from the model
                             Log.i("Arguments Map: ", arguments.toString());
@@ -352,19 +352,19 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         findViewById(R.id.textViewBus).setVisibility(View.VISIBLE);
         TextView tv1 = findViewById(R.id.textViewBike);
         tv1.setPadding(dpToPx(69), constantHeight - constantPadding - dpToPx(bikeValue * variablePadding), 0, 0);
-        tv1.setText("Bike" + "\n" + bikeValue / MONITORING_REPETITIONS * 100 + "%");
+        tv1.setText("Bike" + "\n" + String.format("%.1f", bikeValue / (double) MONITORING_REPETITIONS * 100.0) + "%");
         TextView tv2 = findViewById(R.id.textViewScooter);
         tv2.setPadding(dpToPx(114), constantHeight - constantPadding - dpToPx(scooterValue * variablePadding), 0, 0);
-        tv2.setText("Scooter" + "\n" + scooterValue / MONITORING_REPETITIONS * 100 + "%");
+        tv2.setText("Scooter" + "\n" + String.format("%.1f", scooterValue / (double) MONITORING_REPETITIONS * 100.0) + "%");
         TextView tv3 = findViewById(R.id.textViewWalk);
         tv3.setPadding(dpToPx(181), constantHeight - constantPadding - dpToPx(walkValue * variablePadding), 0, 0);
-        tv3.setText("Walk" + "\n" + walkValue / MONITORING_REPETITIONS * 100 + "%");
+        tv3.setText("Walk" + "\n" + String.format("%.1f", walkValue / (double) MONITORING_REPETITIONS * 100.0) + "%");
         TextView tv4 = findViewById(R.id.textViewRun);
         tv4.setPadding(dpToPx(243), constantHeight - constantPadding - dpToPx(runValue * variablePadding), 0, 0);
-        tv4.setText("Run" + "\n" + runValue / MONITORING_REPETITIONS * 100 + "%");
+        tv4.setText("Run" + "\n" + String.format("%.1f", runValue / (double) MONITORING_REPETITIONS * 100.0)  + "%");
         TextView tv5 = findViewById(R.id.textViewBus);
         tv5.setPadding(dpToPx(299), constantHeight - constantPadding - dpToPx(busValue * variablePadding), 0, 0);
-        tv5.setText("Bus" + "\n" + busValue / MONITORING_REPETITIONS * 100 + "%");
+        tv5.setText("Bus" + "\n" + String.format("%.1f", busValue / (double) MONITORING_REPETITIONS * 100.0) + "%");
         plot.getLayoutManager().refreshLayout();
         plot.redraw();
         plot.setVisibility(View.VISIBLE);
