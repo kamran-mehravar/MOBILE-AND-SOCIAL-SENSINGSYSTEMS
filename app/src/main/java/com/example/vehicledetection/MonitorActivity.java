@@ -6,6 +6,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.View;
 
 import android.content.Context;
@@ -15,6 +16,8 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.animation.AnimationUtils;
+import android.view.animation.RotateAnimation;
 import android.widget.Chronometer;
 import android.widget.TextView;
 
@@ -211,6 +214,9 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     private void startMonitoring() {
         try {
             Chronometer timeRecorded = findViewById(R.id.monitoringChronometer);
+            timeRecorded.setVisibility(View.VISIBLE);
+            plot.setVisibility(View.INVISIBLE);
+            hideTextResults();
             inferenceTempFile = DataWindow.initTempFiles("temp_sample_data", c.getFilesDir(), true);
             sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME); // SENSOR_DELAY_GAME: 20ms sample interval
             monitoringStatus = true;
@@ -228,6 +234,14 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
 
     }
 
+    private void hideTextResults() {
+        findViewById(R.id.textViewBike).setVisibility(View.INVISIBLE);
+        findViewById(R.id.textViewScooter).setVisibility(View.INVISIBLE);
+        findViewById(R.id.textViewWalk).setVisibility(View.INVISIBLE);
+        findViewById(R.id.textViewRun).setVisibility(View.INVISIBLE);
+        findViewById(R.id.textViewBus).setVisibility(View.INVISIBLE);
+    }
+
     /**
      * Stop getting data from accelerometer and start computing results
      */
@@ -235,6 +249,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         Chronometer focus = findViewById(R.id.monitoringChronometer);
         sm.unregisterListener(this, sAcceleration);
         monitoringStatus = false;
+        focus.setVisibility(View.INVISIBLE);
         focus.setBase(SystemClock.elapsedRealtime());
         focus.stop();
         returnInference(inferenceTempFile);
@@ -301,44 +316,54 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         }
     }
 
+    private int dpToPx(int dp) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,dp, c.getResources().getDisplayMetrics());
+    }
+
     /**
-     * Show the results computed by machine learning
+     * Show the results computed by machine learning on a plot
      */
     private void showResults() {
         TextView tv = findViewById(R.id.tvResults);
         tv.setText("Bike: " + bikeValue + " Scooter: " + scooterValue + " Walk: " + walkValue);
-        XYSeries s1 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bike", 0.95, bikeValue);
+        // if / else fast conditions as last param
+        XYSeries s1 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bike", 0.95, (bikeValue == 0) ? 0.1 :  bikeValue);
         plot.addSeries(s1, new BarFormatter(Color.GREEN, Color.BLACK));
-        XYSeries s2 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Scooter", 1.7, 4);
+        XYSeries s2 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Scooter", 1.7, (scooterValue == 0) ? 0.1 :  scooterValue);
         plot.addSeries(s2, new BarFormatter(Color.RED, Color.BLACK));
-        XYSeries s3 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Walk", 2.45, 6);
+        XYSeries s3 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Walk", 2.45, (walkValue == 0) ? 0.1 :  walkValue);
         plot.addSeries(s3, new BarFormatter(Color.YELLOW, Color.BLACK));
-        XYSeries s4 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Run", 3.2, 5);
+        XYSeries s4 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Run", 3.2, (runValue == 0) ? 0.1 :  runValue);
         plot.addSeries(s4, new BarFormatter(Color.BLUE, Color.BLACK));
-        XYSeries s5 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bus", 3.95, 3);
+        XYSeries s5 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bus", 3.95, (busValue == 0) ? 0.1 :  busValue);
         plot.addSeries(s5, new BarFormatter(Color.WHITE, Color.BLACK));
         BarRenderer renderer = (BarRenderer) plot.getRenderer(BarRenderer.class);
         float scale = getResources().getDisplayMetrics().density;
         renderer.setBarWidth((int) (43*scale + 0.5f));
         Log.i("Info", scale + "");
-        int constantHeight = (int) (764*scale + 0.5f);
-        int constantPadding = (int) (196*scale + 0.5f);
+        int constantHeight = dpToPx(764);
+        int constantPadding = dpToPx(220);
         int variablePadding = 87;
+        findViewById(R.id.textViewBike).setVisibility(View.VISIBLE);
+        findViewById(R.id.textViewScooter).setVisibility(View.VISIBLE);
+        findViewById(R.id.textViewWalk).setVisibility(View.VISIBLE);
+        findViewById(R.id.textViewRun).setVisibility(View.VISIBLE);
+        findViewById(R.id.textViewBus).setVisibility(View.VISIBLE);
         TextView tv1 = findViewById(R.id.textViewBike);
-        tv1.setPadding((int) (69*scale + 0.5f),  constantHeight - constantPadding - (int) (2*variablePadding*scale + 0.5f), 0, 0);
-        tv1.setText("Bike");
+        tv1.setPadding(dpToPx(69),  constantHeight - constantPadding - dpToPx(bikeValue * variablePadding), 0, 0);
+        tv1.setText("Bike" + "\n" + bikeValue/MONITORING_REPETITIONS*100 + "%");
         TextView tv2 = findViewById(R.id.textViewScooter);
-        tv2.setPadding((int) (114*scale + 0.5f), constantHeight - constantPadding - (int) (4*variablePadding*scale + 0.5f), 0, 0);
-        tv2.setText("Scooter");
+        tv2.setPadding(dpToPx(114), constantHeight - constantPadding - dpToPx(scooterValue * variablePadding), 0, 0);
+        tv2.setText("Scooter"+ "\n" + scooterValue/MONITORING_REPETITIONS*100 + "%");
         TextView tv3 = findViewById(R.id.textViewWalk);
-        tv3.setPadding((int) (181*scale + 0.5f), constantHeight - constantPadding - (int) (6*variablePadding*scale + 0.5f), 0, 0);
-        tv3.setText("Walk");
+        tv3.setPadding(dpToPx(181), constantHeight - constantPadding - dpToPx(walkValue * variablePadding), 0, 0);
+        tv3.setText("Walk" + "\n" + walkValue/MONITORING_REPETITIONS*100 + "%");
         TextView tv4 = findViewById(R.id.textViewRun);
-        tv4.setPadding((int) (242*scale + 0.5f), constantHeight - constantPadding - (int) (5*variablePadding*scale + 0.5f), 0, 0);
-        tv4.setText("Run");
+        tv4.setPadding(dpToPx(243), constantHeight - constantPadding - dpToPx(runValue * variablePadding), 0, 0);
+        tv4.setText("Run" + "\n" + runValue/MONITORING_REPETITIONS*100 + "%");
         TextView tv5 = findViewById(R.id.textViewBus);
-        tv5.setPadding((int) (297*scale + 0.5f), constantHeight - constantPadding - (int) (3*variablePadding*scale + 0.5f), 0, 0);
-        tv5.setText("Bus");
+        tv5.setPadding(dpToPx(299), constantHeight - constantPadding - dpToPx(busValue * variablePadding), 0, 0);
+        tv5.setText("Bus" + "\n" + busValue/MONITORING_REPETITIONS*100 + "%");
         plot.getLayoutManager().refreshLayout();
         plot.redraw();
         plot.setVisibility(View.VISIBLE);
@@ -376,6 +401,8 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
             plot.getGraphWidget().setDomainOriginLinePaint(null);
             plot.getGraphWidget().setRangeOriginLinePaint(null);
             plot.getGraphWidget().setRangeOriginLinePaint(null);
+            plot.getLayoutManager()
+                    .remove(plot.getLegendWidget());
         } catch (Exception e) {
             Log.i("fail", "", e);
         }

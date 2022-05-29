@@ -27,45 +27,66 @@
             android:layout_height="wrap_content"
             android:text="" />
 
-        <Chronometer
-            android:id="@+id/monitoringChronometer"
-            android:layout_width="41dp"
-            android:layout_marginBottom="10dp"
-            android:layout_height="17dp"
-            android:text="Chronometer" />
-
         <Button
             android:id="@+id/startMonitoringButton"
             android:layout_width="300dp"
-            android:layout_height="70dp"
+            android:layout_height="85dp"
             android:onClick="onClick"
             android:text="Monitor" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        tools:layout_editor_absoluteX="-17dp"
+        tools:layout_editor_absoluteY="0dp">
+
+        <Chronometer
+            android:id="@+id/monitoringChronometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:textSize="90sp"
+            android:textStyle="bold"
+            android:text="Chronometer" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/textViewBike"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textStyle="bold"
         android:text="" />
     <TextView
         android:id="@+id/textViewScooter"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textStyle="bold"
         android:text="" />
     <TextView
         android:id="@+id/textViewWalk"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textStyle="bold"
         android:text="" />
     <TextView
         android:id="@+id/textViewRun"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textStyle="bold"
         android:text="" />
     <TextView
         android:id="@+id/textViewBus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textStyle="bold"
         android:text="" />
 
 
