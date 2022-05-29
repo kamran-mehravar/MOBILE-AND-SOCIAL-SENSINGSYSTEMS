@@ -5,6 +5,8 @@ import androidx.core.content.ContextCompat;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.Configuration;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -59,8 +61,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         setSensors();
         c = this.getBaseContext();
         initListeners();
-        Button b = findViewById(R.id.bikeButton);
-        b.setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
+        findViewById(R.id.bikeButton).setBackgroundColor(ContextCompat.getColor(c, com.androidplot.R.color.ap_gray));
         // FFT
         this.mSampleWindows = new double[][]{
                 // X, Y, Z.
@@ -76,7 +77,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         };
         // Declare the FourierRunnable.
         this.mFourierRunnable = new FourierRunnable(this.getDecoupler());
-        // Initialize the Timestamp.;
         // Start the FourierRunnable.
         (new Thread(this.getFourierRunnable())).start();
     }
@@ -136,6 +136,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     /**
      * Announce a event regarding to collection on a text view
+     *
      * @param data string to saw
      */
     private void announceEvent(String data) {
@@ -147,7 +148,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             public void run() {
                 tv.setText("");
             }
-        }, 5000);
+        }, 5000L);
     }
 
     @Override
@@ -162,7 +163,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             this.setOffset(this.getOffset() + 1);
             // Is the buffer full?
             if (this.getOffset() == MAX_TESTS_NUM) {
-                Log.i("fail", "RUN");
                 windowRecords++;
                 // Is the FourierRunnable ready?
                 if (this.getFourierRunnable().isReady()) {
@@ -176,19 +176,16 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                         // Notify any listeners. (There should be one; the FourierRunnable!)
                         this.getDecoupler().notify();
                     }
-                } else {
-                    // Here, we've wasted an entire frame of accelerometer data.
-                    Log.d("TB/API", "Wasted samples.");
                 }
                 // Reset the Offset.
                 this.setOffset((int) (MAX_TESTS_NUM * overlapProgress / 100f));
-                // Re-initialize the Timestamp.;
             }
         }
     }
 
     /**
      * Mix data collected on current window with overlapped data
+     *
      * @param pResultBuffer current window data
      * @return mixed data
      */
@@ -235,7 +232,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
                 firstRecord = true;
             });
         } catch (Exception e) {
-            Log.i("fail", "", e);
+            announceEvent("There was an error computing FFT data.");
         }
     }
 
@@ -263,19 +260,15 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
      * Start getting data from accelerometer
      */
     private void startRecording() {
-        try {
-            Chronometer timeRecorded = findViewById(R.id.chronometer1);
-            f = DataWindow.initTempFiles("fft_" + this.overlapProgress, c.getFilesDir(), false);
-            sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
-            recording = true;
-            firstRecord = false;
-            this.setOffset(0);
-            overlapData = new double[3][(int) (MAX_TESTS_NUM * overlapProgress / 100f)];
-            timeRecorded.setBase(SystemClock.elapsedRealtime());
-            timeRecorded.start();
-        } catch (Exception e) {
-            Log.i("fail", "", e);
-        }
+        Chronometer timeRecorded = findViewById(R.id.chronometer1);
+        f = DataWindow.initTempFiles("fft_" + this.overlapProgress, c.getFilesDir(), false);
+        sm.registerListener(this, sAcceleration, SensorManager.SENSOR_DELAY_GAME);
+        recording = true;
+        firstRecord = false;
+        this.setOffset(0);
+        overlapData = new double[3][(int) (MAX_TESTS_NUM * overlapProgress / 100f)];
+        timeRecorded.setBase(SystemClock.elapsedRealtime());
+        timeRecorded.start();
     }
 
     /**
@@ -310,20 +303,17 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
      * Set buttons visual like on create
      */
     public void setDefaultButtons() {
-        Button b = findViewById(R.id.bikeButton);
-        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
-        b = findViewById(R.id.walkButton);
-        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
-        b = findViewById(R.id.scooterButton);
-        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
-        b = findViewById(R.id.runButton);
-        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
-        b = findViewById(R.id.busButton);
-        b.setBackgroundColor(this.getResources().getColor(R.color.purple_200, null));
+        int nightModeFlags = c.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        findViewById(R.id.bikeButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
+        findViewById(R.id.walkButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
+        findViewById(R.id.scooterButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
+        findViewById(R.id.runButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
+        findViewById(R.id.busButton).setBackgroundColor((nightModeFlags == Configuration.UI_MODE_NIGHT_YES) ? this.getResources().getColor(R.color.purple_200, null) : this.getResources().getColor(R.color.purple_500, null));
     }
 
     /**
      * Compute a random UUID for a window record of integer 128 bits
+     *
      * @return value
      */
     private static long computeUUID() {
@@ -340,16 +330,17 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
         if (seekBar.getId() == R.id.overlappingBar) {
             manageBarProgress(progress);
-            ((TextView) findViewById(R.id.overlappingText)).setText("Overlap    =   " + overlapProgress);
+            ((TextView) findViewById(R.id.overlapValue)).setText(overlapProgress + "%");
         }
     }
 
     /**
      * Simple method to have the step value on 25 on a seek bar
+     *
      * @param overlapProgress
      */
     private void manageBarProgress(int overlapProgress) {
-        this.overlapProgress = overlapProgress / 25;
+        this.overlapProgress = (int) (overlapProgress / 19);
         this.overlapProgress = this.overlapProgress * 25;
     }
 

@@ -14,11 +14,12 @@
         android:id="@+id/chronometer1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="28dp"
         android:gravity="center_horizontal"
         android:text="Chronometer"
+        android:textSize="25sp"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout3"
-        tools:layout_editor_absoluteX="16dp" />
+        tools:layout_editor_absoluteX="0dp" />
 
     <LinearLayout
         android:id="@+id/linearLayout3"
@@ -49,19 +50,20 @@
 
     <TextView
         android:id="@+id/infoMessageTV"
-        android:layout_width="221dp"
+        android:layout_width="match_parent"
         android:layout_height="71dp"
-        android:layout_marginStart="104dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="36dp"
         android:gravity="center_horizontal"
         android:textAlignment="center"
+        android:textAllCaps="true"
+        android:textSize="15sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/chronometer1" />
 
     <LinearLayout
         android:id="@+id/linearLayout2"
-        android:layout_width="match_parent"
-        android:layout_height="81dp"
+        android:layout_width="405dp"
+        android:layout_height="107dp"
         android:layout_marginTop="32dp"
         android:gravity="center"
         android:orientation="vertical"
@@ -72,14 +74,32 @@
             android:id="@+id/overlappingText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Overlap    =    0" />
+            android:text="Window Overlap"
+            android:textAlignment="center"
+            android:textAllCaps="true"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/overlapValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0%"
+            android:layout_marginTop="15dp"
+            android:textAlignment="center"
+            android:textAllCaps="true"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <SeekBar
             android:id="@+id/overlappingBar"
-            android:layout_width="211dp"
-            android:layout_height="21dp"
+            android:layout_width="325dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="25dp"
+            android:progressTint="@color/black"
             android:max="75"
+            android:thumb="@drawable/custom_thumb"
+            android:thumbTint="@color/black"
             android:progress="0" />
     </LinearLayout>
 
@@ -87,11 +107,11 @@
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="72dp"
+        android:layout_marginTop="40dp"
         android:gravity="center"
         android:orientation="vertical"
         app:layout_constraintTop_toTopOf="parent"
-        tools:layout_editor_absoluteX="0dp">
+        tools:layout_editor_absoluteX="16dp">
 
         <Button
             android:id="@+id/bikeButton"
@@ -99,16 +119,15 @@
             android:layout_height="53dp"
             android:onClick="onClick"
             android:text="Bike"
-            android:textSize="12sp" />
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/scooterButton"
             android:layout_width="304dp"
             android:layout_height="53dp"
-            android:width="115dp"
             android:onClick="onClick"
             android:text="Scooter"
-            android:textSize="12sp" />
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/walkButton"
@@ -117,13 +136,14 @@
             android:width="115dp"
             android:onClick="onClick"
             android:text="Walk"
-            android:textSize="12sp" />
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/runButton"
             android:layout_width="304dp"
             android:layout_height="53dp"
             android:onClick="onClick"
+            android:textSize="16sp"
             android:text="Run" />
 
         <Button
@@ -131,6 +151,7 @@
             android:layout_width="304dp"
             android:layout_height="53dp"
             android:onClick="onClick"
+            android:textSize="16sp"
             android:text="Bus" />
     </LinearLayout>
 

@@ -6,8 +6,11 @@
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.1575" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable/button_focus.xml" value="0.1945" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable/custom_button.xml" value="0.198" />
+        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable/custom_thumb.xml" value="0.183" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable/ic_launcher_background.xml" value="0.1575" />
-        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_data_collection.xml" value="0.22" />
+        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable/seekbar_progress.xml" value="0.112" />
+        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/drawable/seekbar_style.xml" value="0.112" />
+        <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_data_collection.xml" value="0.25" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_machine_learning.xml" value="0.15572916666666667" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="..\:/Mobile_Project/MOBILE-AND-SOCIAL-SENSINGSYSTEMS/app/src/main/res/layout/activity_monitor.xml" value="0.1" />
