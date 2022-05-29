@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
     // CONSTANT VALUES
     private static final int MONITORING_REPETITIONS = 6; // collect data for 6 time windows (5s each)
     private static final int SAMPLE_SIZE = 256;
+    private static final double SAMPLE_MIN_THRESHOLD = 0.3; // if the sample collected has a maximum value lower than the threshold it tis discarded
 
     private Sensor sAcceleration;
     private SensorManager sm;
@@ -264,31 +266,58 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         String line;
         try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
             line = reader.readLine();
-            String[] keys = line.split(",", (SAMPLE_SIZE / 2) * 3);
+            String[] keys = line.split(",", (SAMPLE_SIZE / 2)); // keys are only mx0 to mx127 - the values from y and z axis are added to the x axis values
+            Log.i("keys: ", line + "\n");
             for (int n = 0; n < MONITORING_REPETITIONS; n++) { // iterate over number of monitoring windows captured (equal to the number of lines)
                 if ((line = reader.readLine()) != null) {
-                    String[] values = line.split(",", (SAMPLE_SIZE / 2) * 3);
+                    String[] values = line.split(",", (SAMPLE_SIZE / 2) *3);
                     // Write sample data in the map
                     if (values.length > 1 && keys.length > 1) {
-                        for (int i = 0; i < (SAMPLE_SIZE / 2) * 3; i++) {
-                            arguments.put(keys[i], values[i]);
+                        Log.i("fail", values.length + " " + keys.length);
+                        double[] values_all = Arrays.stream(values).mapToDouble(Double::parseDouble).toArray(); // convert values to double
+                        double[] combined_values = new double[(SAMPLE_SIZE / 2)];
+                        for (int k=0; k<(SAMPLE_SIZE / 2);k++ ) { // add y and z axis data to x axis data
+                            combined_values[k] = values_all[k]+values_all[k+128]+values_all[k+256];
                         }
-                        // get Inference value from the model
-                        Map<String, ?> results = evaluator.evaluate(arguments);
-                        results = EvaluatorUtil.decodeAll(results);
-                        arguments.clear();
-                        result = (int) results.get("y");
-                        if (result == 0) bikeValue++;
-                        else if (result == 1) scooterValue++;
-                        else if (result == 2) walkValue++;
-                        else if (result == 3) runValue++;
-                        else if (result == 4) busValue++;
+                        double max_sample_value = arrayMax(combined_values);
+                        if (max_sample_value > SAMPLE_MIN_THRESHOLD) {
+                            for (int i = 0; i < (SAMPLE_SIZE / 2); i++) {
+                                double normal_value = combined_values[i]/max_sample_value; // normalize the sample input
+                                arguments.put(keys[i], normal_value+"");
+                            }
+                            // get Inference value from the model
+                            Log.i("Arguments Map: ", arguments.toString());
+                            Map<String, ?> results = evaluator.evaluate(arguments);
+                            results = EvaluatorUtil.decodeAll(results);
+                            Log.i("RESULTS: ", results.toString());
+                            arguments.clear();
+                            result = (int) results.get("y");
+                            if (result == 0) bikeValue++;
+                            else if (result == 1) scooterValue++;
+                            else if (result == 2) walkValue++;
+                            else if (result == 3) runValue++;
+                            else if (result == 4) busValue++;
+                            else {
+                                Log.i("error: ", "model result not listed\n");
+                            }
+                        }
+                        else {
+                            Log.i("error: ", "Sample DISCARDED - Min Threshold not crossed\n");
+                        }
                     }
                 }
             }
         } catch (Exception e) {
+            e.printStackTrace();
             Log.d("Fail to Read file in inference map", "", e);
         }
+    }
+
+    public static double arrayMax(double[] arr) {
+        double max = Double.NEGATIVE_INFINITY;
+        for(double cur: arr)
+            max = Math.max(max, cur);
+        return max;
     }
 
     private int dpToPx(int dp) {
