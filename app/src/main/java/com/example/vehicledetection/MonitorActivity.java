@@ -338,7 +338,7 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         XYSeries s4 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Run", 3.2, (runValue == 0) ? 0.1 : runValue);
         plot.addSeries(s4, new BarFormatter(Color.BLUE, Color.BLACK));
         XYSeries s5 = new SimpleXYSeries(SimpleXYSeries.ArrayFormat.XY_VALS_INTERLEAVED, "Bus", 3.95, (busValue == 0) ? 0.1 : busValue);
-        plot.addSeries(s5, new BarFormatter(Color.WHITE, Color.BLACK));
+        plot.addSeries(s5, new BarFormatter(Color.parseColor("#FFA500"), Color.BLACK));
         BarRenderer renderer = (BarRenderer) plot.getRenderer(BarRenderer.class);
         float scale = getResources().getDisplayMetrics().density;
         renderer.setBarWidth((int) (43 * scale + 0.5f));
@@ -396,6 +396,8 @@ public class MonitorActivity extends AppCompatActivity implements SensorEventLis
         plot.getGraphWidget().setRangeGridLinePaint(null);
         plot.getBorderPaint().setColor(Color.TRANSPARENT);
 
+        plot.getGraphWidget().setDomainOriginLinePaint(null);
+        plot.getGraphWidget().setRangeOriginLinePaint(null);
         plot.getLayoutManager().remove(plot.getDomainLabelWidget());
         plot.getLayoutManager().remove(plot.getLegendWidget());
     }
