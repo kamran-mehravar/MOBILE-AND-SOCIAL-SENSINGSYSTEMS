@@ -1,0 +1,5 @@
+scikit-learn
+pylint
+pandas~=1.4.0
+joblib~=1.1.0
+numpy~=1.21.2
