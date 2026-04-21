@@ -14,7 +14,7 @@ A classification model based on a **Multi-Layer Perceptron (MLP)** was designed 
 - Walking
 - Running
 
-The project focuses on a lightweight sensing approach by relying mainly on the **accelerometer sensor**, which helps reduce battery consumption while still providing good response time. :contentReference[oaicite:1]{index=1}
+The project focuses on a lightweight sensing approach by relying mainly on the **accelerometer sensor**, which helps reduce battery consumption while still providing good response time. 
 
 ## Main Idea
 
@@ -28,7 +28,7 @@ To improve performance, the project includes:
 - noise reduction using **FFT**
 - machine learning models trained for mobile activity classification
 
-According to the repository description, the reported results achieved **over 95% accuracy** on a limited dataset. :contentReference[oaicite:2]{index=2}
+According to the repository description, the reported results achieved **over 95% accuracy** on a limited dataset. 
 
 ## Features
 
@@ -39,7 +39,7 @@ According to the repository description, the reported results achieved **over 95
 - Noise reduction using FFT
 - Machine learning training pipeline
 - Android application support for both data collection and monitoring
-- Project documentation and presentation materials included in the repository :contentReference[oaicite:3]{index=3}
+- Project documentation and presentation materials included in the repository
 
 ## Detected Classes
 
@@ -51,7 +51,7 @@ The system is designed to classify the following user states:
 - Walking
 - Running
 
-These classes cover both **motorized** and **non-motorized** movement types. :contentReference[oaicite:4]{index=4}
+These classes cover both **motorized** and **non-motorized** movement types. 
 
 ## Methodology
 
@@ -68,7 +68,7 @@ The repository description explicitly mentions the use of:
 - accelerometer sensor data
 - extracted frequencies
 - a Multi-Layer Perceptron model
-- FFT for noise removal and data optimization :contentReference[oaicite:5]{index=5}
+- FFT for noise removal and data optimization
 
 ## Project Structure
 
@@ -92,8 +92,7 @@ From the repository structure, the project appears to combine:
 - machine learning experimentation
 - mobile application development
 - Gradle-based Android or Java-side project setup
-- project documentation and presentation material :contentReference[oaicite:6]{index=6}
-
+- project documentation and presentation material
 ## Tech Stack
 
 Based on the repository contents and detected languages:
@@ -105,7 +104,7 @@ Based on the repository contents and detected languages:
 - Android application module
 - Machine Learning pipeline
 
-GitHub reports the main repository languages as mostly **Jupyter Notebook**, followed by **Java** and **Python**. :contentReference[oaicite:7]{index=7}
+GitHub reports the main repository languages as mostly **Jupyter Notebook**, followed by **Java** and **Python**. 
 
 ## Mobile Application
 
@@ -114,7 +113,7 @@ The project includes an application with two main modes:
 - **data collection mode** for gathering accelerometer samples used in training
 - **monitoring mode** for testing the deployed model in real time
 
-This allows the system to support both dataset generation and live prediction inside the same project ecosystem. :contentReference[oaicite:8]{index=8}
+This allows the system to support both dataset generation and live prediction inside the same project ecosystem.
 
 ## Design Goals
 
@@ -132,8 +131,7 @@ According to the repository description:
 
 - the model achieved **over 95% accuracy**
 - FFT-based noise removal improved data quality and model performance
-- overlap-based training experiments were also explored to improve accuracy further :contentReference[oaicite:9]{index=9}
-
+- overlap-based training experiments were also explored to improve accuracy further 
 ## Repository Contents
 
 The repository also includes supporting materials such as:
@@ -142,7 +140,7 @@ The repository also includes supporting materials such as:
 - `proposal.pdf`
 - `Real-Time Vehicle and Activity Detection using Smartphone Sensors .pptx`
 
-These files suggest the repository contains not only code, but also technical documentation and presentation material. :contentReference[oaicite:10]{index=10}
+These files suggest the repository contains not only code, but also technical documentation and presentation material. 
 
 ## Notes
 
